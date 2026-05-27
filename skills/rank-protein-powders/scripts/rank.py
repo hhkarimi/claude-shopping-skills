@@ -18,10 +18,20 @@ WHEY_ISOLATE_LEUCINE_FRACTION = 0.11
 
 
 def compute_row(asin: str, price: float, nut: dict) -> dict:
-    total_protein_g = nut["servings_per_container"] * nut["protein_per_serving_g"]
+    protein_per_serving = nut["protein_per_serving_g"]
+    servings = nut["servings_per_container"]
+    if protein_per_serving <= 0 or servings <= 0:
+        raise ValueError(
+            f"{asin}: protein_per_serving_g and servings_per_container must be > 0 "
+            f"(got protein={protein_per_serving}, servings={servings})"
+        )
+    leucine = nut["leucine_per_serving_g"]
+    if leucine <= 0:
+        raise ValueError(f"{asin}: leucine_per_serving_g must be > 0 (got {leucine})")
+    total_protein_g = servings * protein_per_serving
     dollar_per_g = price / total_protein_g
-    cal_protein = nut["calories_per_serving"] / nut["protein_per_serving_g"]
-    leucine_fraction = nut["leucine_per_serving_g"] / nut["protein_per_serving_g"]
+    cal_protein = nut["calories_per_serving"] / protein_per_serving
+    leucine_fraction = leucine / protein_per_serving
     leucine_adjusted = dollar_per_g * (WHEY_ISOLATE_LEUCINE_FRACTION / leucine_fraction)
     return {
         "asin": asin,
@@ -71,6 +81,7 @@ def main() -> None:
     rows = []
     missing_nut = []
     missing_price = []
+    invalid_nut: list[str] = []
     for entry in prices:
         asin = entry["asin"]
         price = entry.get("price")
@@ -81,7 +92,10 @@ def main() -> None:
         if not nut:
             missing_nut.append(asin)
             continue
-        rows.append(compute_row(asin, price, nut))
+        try:
+            rows.append(compute_row(asin, price, nut))
+        except ValueError as e:
+            invalid_nut.append(f"{asin} ({e})")
 
     rows.sort(key=lambda r: r[args.sort])
 
@@ -95,6 +109,8 @@ def main() -> None:
         print(
             f"\nSkipped (no nutrition data, add to nutrition_data.json): {', '.join(missing_nut)}"
         )
+    if invalid_nut:
+        print(f"\nSkipped (invalid nutrition data): {'; '.join(invalid_nut)}")
 
 
 if __name__ == "__main__":

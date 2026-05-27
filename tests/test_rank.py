@@ -32,12 +32,77 @@ def test_compute_row_basic():
     row = compute_row("B000TEST01", 100.0, nut)
     assert row["asin"] == "B000TEST01"
     assert row["total_protein_g"] == 2500
-    assert row["dollar_per_g_protein"] == 0.04
-    assert row["cal_protein"] == 4.4
+    assert row["dollar_per_g_protein"] == pytest.approx(0.04, abs=1e-6)
+    assert row["cal_protein"] == pytest.approx(4.4, abs=1e-6)
     # leucine-adjusted equals raw when product matches whey-isolate leucine fraction (11%)
     assert row["leucine_adjusted"] == pytest.approx(
         row["dollar_per_g_protein"], rel=1e-3
     )
+
+
+def test_compute_row_rejects_zero_protein():
+    nut = {
+        "name": "Bad data",
+        "type": "whey_isolate",
+        "servings_per_container": 50,
+        "protein_per_serving_g": 0,
+        "calories_per_serving": 100,
+        "leucine_per_serving_g": 2.0,
+    }
+    with pytest.raises(ValueError, match="protein_per_serving_g"):
+        compute_row("B000BAD001", 30.0, nut)
+
+
+def test_compute_row_rejects_zero_servings():
+    nut = {
+        "name": "Bad data",
+        "type": "whey_isolate",
+        "servings_per_container": 0,
+        "protein_per_serving_g": 25,
+        "calories_per_serving": 100,
+        "leucine_per_serving_g": 2.75,
+    }
+    with pytest.raises(ValueError, match="servings_per_container"):
+        compute_row("B000BAD002", 30.0, nut)
+
+
+def test_cli_handles_invalid_nutrition(tmp_path: Path):
+    """ASINs with semantically invalid nutrition data are reported and skipped, not crashed."""
+    fake_nutrition = tmp_path / "nutrition.json"
+    fake_nutrition.write_text(
+        json.dumps(
+            {
+                "B000BADXXX": {
+                    "name": "Zero-protein product",
+                    "type": "whey_isolate",
+                    "servings_per_container": 50,
+                    "protein_per_serving_g": 0,
+                    "calories_per_serving": 100,
+                    "leucine_per_serving_g": 2.0,
+                },
+            }
+        )
+    )
+    fake_prices = tmp_path / "prices.json"
+    fake_prices.write_text(
+        json.dumps([{"asin": "B000BADXXX", "price": 30.0, "ok": True}])
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RANK_SCRIPT),
+            "--prices",
+            str(fake_prices),
+            "--nutrition",
+            str(fake_nutrition),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "Ranked: 0 products" in result.stdout
+    assert "invalid nutrition data" in result.stdout
+    assert "B000BADXXX" in result.stdout
 
 
 def test_compute_row_leucine_penalty_for_pea():

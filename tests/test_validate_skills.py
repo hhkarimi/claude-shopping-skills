@@ -31,7 +31,8 @@ def test_passes_with_valid_frontmatter(tmp_path: Path):
     _make_skill(tmp_path, "name: fake-skill\ndescription: A test skill.")
     proc = _run(tmp_path)
     assert proc.returncode == 0
-    assert "OK" in proc.stdout
+    # Assert count too — guards against the validator passing on 0 files.
+    assert "OK: 1 SKILL.md" in proc.stdout
 
 
 def test_fails_without_name(tmp_path: Path):

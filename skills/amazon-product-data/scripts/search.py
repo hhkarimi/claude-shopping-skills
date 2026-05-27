@@ -19,13 +19,18 @@ import sys
 from pathlib import Path
 from urllib.parse import quote_plus
 
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
 ASIN_RE = re.compile(r"^[A-Z0-9]{10}$")
 PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
 RATING_RE = re.compile(r"([0-9.]+) out of 5")
-REVIEW_COUNT_RE = re.compile(r"([0-9,]+)")
+# Review counts are integers possibly with thousands commas. Anchored to avoid
+# accidentally matching the leading digit of a star rating like "4.5".
+REVIEW_COUNT_RE = re.compile(r"^\s*\(?([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\)?\s*$")
+
+WAF_MARKERS = ("AwsWafIntegration", "awsWafCookieDomainList", "challenge-container")
 
 
 async def parse_card(card) -> dict | None:
@@ -55,13 +60,15 @@ async def parse_card(card) -> dict | None:
         if rm:
             rating = float(rm.group(1))
 
+    # Use only the dedicated count-component selector — broader fallbacks risk
+    # capturing the rating's leading digit instead of the count.
     review_count = None
     rc_loc = card.locator(
-        'a[href*="#customerReviews"] span, [data-csa-c-content-id="alf-customer-ratings-count-component"]'
+        '[data-csa-c-content-id="alf-customer-ratings-count-component"]'
     ).first
     if await rc_loc.count():
-        rc_text = await rc_loc.text_content() or ""
-        rcm = REVIEW_COUNT_RE.search(rc_text)
+        rc_text = (await rc_loc.text_content() or "").strip()
+        rcm = REVIEW_COUNT_RE.match(rc_text)
         if rcm:
             review_count = int(rcm.group(1).replace(",", ""))
 
@@ -92,16 +99,38 @@ async def search(query: str, max_results: int, out_dir: Path) -> list[dict]:
         )
         page = await context.new_page()
         await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+
+        results_rendered = True
         try:
             await page.wait_for_selector(
                 '[data-component-type="s-search-result"]', timeout=20000
             )
-        except Exception:
-            pass
+        except PlaywrightTimeoutError:
+            results_rendered = False
+
         await page.wait_for_timeout(2500)
 
+        # Save artifacts even on failure so the user can diagnose.
         await page.screenshot(path=str(out_dir / "search.png"), full_page=False)
-        (out_dir / "search.html").write_text(await page.content())
+        html = await page.content()
+        (out_dir / "search.html").write_text(html, encoding="utf-8")
+
+        # Detect AWS WAF / bot challenge — distinguishes "0 results" from "blocked".
+        if not results_rendered and any(marker in html for marker in WAF_MARKERS):
+            print(
+                "ERROR: AWS WAF bot challenge detected. The stealth shim may need "
+                "an update — see search.html for the challenge page.",
+                file=sys.stderr,
+            )
+            await browser.close()
+            sys.exit(2)
+
+        if not results_rendered:
+            print(
+                "WARN: Search results selector did not render within timeout. "
+                "Check search.html — could be empty results or a layout change.",
+                file=sys.stderr,
+            )
 
         cards = await page.locator('[data-component-type="s-search-result"]').all()
         results: list[dict] = []
@@ -114,7 +143,9 @@ async def search(query: str, max_results: int, out_dir: Path) -> list[dict]:
 
         await browser.close()
 
-    (out_dir / "search_results.json").write_text(json.dumps(results, indent=2))
+    (out_dir / "search_results.json").write_text(
+        json.dumps(results, indent=2), encoding="utf-8"
+    )
     return results
 
 
