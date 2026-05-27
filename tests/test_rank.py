@@ -132,6 +132,7 @@ def test_format_table_includes_header_and_rows_and_url():
             "asin": "B000A1B2C3",
             "name": "A",
             "type": "whey_isolate",
+            "channel": "regular",
             "price": 50.0,
             "total_protein_g": 1000,
             "dollar_per_g_protein": 0.05,
@@ -142,10 +143,226 @@ def test_format_table_includes_header_and_rows_and_url():
     ]
     out = format_table(rows)
     assert "| Product |" in out
+    assert "| Channel |" in out
+    assert "| % Δ vs prev |" in out
     assert "| Buy |" in out
     assert "| A |" in out
+    assert "| regular |" in out
     assert "$0.0500" in out
+    # First (and only) row has no previous row to compare against → em-dash.
+    assert "| — |" in out
     assert "[link](https://www.amazon.com/dp/B000A1B2C3)" in out
+
+
+def test_format_table_renders_pct_delta_between_adjacent_rows():
+    """Second-row delta is computed against first row's $/g, etc."""
+    rows = [
+        {
+            "asin": "B0CHEAP001",
+            "name": "Cheaper",
+            "type": "whey",
+            "channel": "regular",
+            "price": 10.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.10,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.10,
+            "url": "https://www.amazon.com/dp/B0CHEAP001",
+        },
+        {
+            "asin": "B0DEAR0001",
+            "name": "Dearer",
+            "type": "whey",
+            "channel": "regular",
+            "price": 12.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.12,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.12,
+            "url": "https://www.amazon.com/dp/B0DEAR0001",
+        },
+    ]
+    out = format_table(rows)
+    # Second row should be +20% more expensive per gram than first row.
+    assert "+20.0%" in out
+    # First row should still be em-dash.
+    assert "| — |" in out
+
+
+def test_format_table_zero_delta_renders_without_plus_sign():
+    """Adjacent identical metrics render as '0.0%', not '+0.0%'."""
+    rows = [
+        {
+            "asin": "B0EQUAL001",
+            "name": "First",
+            "type": "whey",
+            "channel": "regular",
+            "price": 10.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.10,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.10,
+            "url": "https://www.amazon.com/dp/B0EQUAL001",
+        },
+        {
+            "asin": "B0EQUAL002",
+            "name": "Tied",
+            "type": "whey",
+            "channel": "regular",
+            "price": 10.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.10,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.10,
+            "url": "https://www.amazon.com/dp/B0EQUAL002",
+        },
+    ]
+    out = format_table(rows)
+    assert "| 0.0% |" in out
+    assert "+0.0%" not in out
+
+
+def test_format_table_delta_tracks_sort_key():
+    """When sorted by cal_protein, the % delta column reflects cal_protein
+    deltas, not $/g protein deltas."""
+    rows = [
+        {
+            "asin": "B0LEAN0001",
+            "name": "Lean",
+            "type": "whey",
+            "channel": "regular",
+            "price": 10.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.20,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.20,
+            "url": "https://www.amazon.com/dp/B0LEAN0001",
+        },
+        {
+            "asin": "B0FATR0001",
+            "name": "Fattier",
+            "type": "whey",
+            "channel": "regular",
+            "price": 10.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.10,
+            "cal_protein": 5.0,
+            "leucine_adjusted": 0.10,
+            "url": "https://www.amazon.com/dp/B0FATR0001",
+        },
+    ]
+    # Sorted by cal_protein: Lean (4.0) first, Fattier (5.0) second.
+    # Delta: (5.0 - 4.0) / 4.0 = +25.0%.
+    out = format_table(rows, sort_key="cal_protein")
+    assert "+25.0%" in out
+
+
+def test_compute_row_uses_regular_price_when_fresh_price_is_none():
+    """fresh_available=True with fresh_price=None means Fresh-exclusive
+    listing — the regular price IS the Fresh price."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 18,
+        "calories_per_serving": 90,
+        "leucine_per_serving_g": 1.7,
+    }
+    row = compute_row("B0FRESH003", 6.96, nut, fresh_available=True, fresh_price=None)
+    assert row["price"] == 6.96
+
+
+def test_compute_row_treats_zero_fresh_price_as_set():
+    """Edge case: fresh_price=0.0 should NOT silently fall through to the
+    regular price (since 0 is falsy). The new conditional uses `is not None`."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 18,
+        "calories_per_serving": 90,
+        "leucine_per_serving_g": 1.7,
+    }
+    row = compute_row("B0FREE001", 6.96, nut, fresh_available=True, fresh_price=0.0)
+    # A $0 fresh_price (theoretical edge case) is now respected as-set, not
+    # interpreted as "unset". dollar_per_g_protein becomes 0.0.
+    assert row["price"] == 0.0
+    assert row["dollar_per_g_protein"] == 0.0
+
+
+def test_compute_row_channel_from_fresh_available_true():
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 17,
+        "calories_per_serving": 100,
+        "leucine_per_serving_g": 1.5,
+    }
+    row = compute_row("B0FRESH001", 5.99, nut, fresh_available=True)
+    assert row["channel"] == "fresh"
+
+
+def test_compute_row_channel_from_fresh_available_false():
+    nut = {
+        "name": "Test",
+        "type": "whey_isolate",
+        "servings_per_container": 10,
+        "protein_per_serving_g": 25,
+        "calories_per_serving": 110,
+        "leucine_per_serving_g": 2.75,
+    }
+    row = compute_row("B0REGULAR1", 20.0, nut, fresh_available=False)
+    assert row["channel"] == "regular"
+
+
+def test_compute_row_respects_nutrition_channel_default_when_unknown():
+    """If fresh_available is None (--prices mode), fall back to the nutrition
+    entry's `channel` field."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "channel": "fresh",
+        "servings_per_container": 1,
+        "protein_per_serving_g": 14,
+        "calories_per_serving": 110,
+        "leucine_per_serving_g": 1.4,
+    }
+    row = compute_row("B0FRESH002", 3.29, nut)
+    assert row["channel"] == "fresh"
+
+
+def test_compute_row_uses_fresh_price_for_dollar_per_g_when_set():
+    """When fresh_available is true AND a separate fresh_price exists, that
+    Fresh price drives the $/g math because it's what the user would pay."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 18,
+        "calories_per_serving": 90,
+        "leucine_per_serving_g": 1.7,
+    }
+    row = compute_row("B0FAGE0001", 7.96, nut, fresh_available=True, fresh_price=6.96)
+    assert row["price"] == 6.96
+    # 6.96 / (4 * 18) = 0.0967
+    assert row["dollar_per_g_protein"] == 0.0967
+
+
+def test_compute_row_falls_back_to_regular_price_when_no_fresh_price():
+    """If fresh_available=true but no separate fresh_price, the regular price
+    is the Fresh price (Fresh-exclusive listings)."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 18,
+        "calories_per_serving": 90,
+        "leucine_per_serving_g": 1.7,
+    }
+    row = compute_row("B0FAGE0002", 6.96, nut, fresh_available=True)
+    assert row["price"] == 6.96
+    assert row["channel"] == "fresh"
 
 
 def test_compute_row_includes_amazon_url():

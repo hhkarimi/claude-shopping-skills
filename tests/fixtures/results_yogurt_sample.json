@@ -1,0 +1,46 @@
+[
+  {
+    "asin": "B008U5OSTQ",
+    "url": "https://www.amazon.com/dp/B008U5OSTQ",
+    "title": "Chobani Non-Fat Plain Greek Yogurt 32oz (fixture)",
+    "price_raw": "$5.37",
+    "price": 5.37,
+    "fresh_available": false,
+    "fresh_price": null,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B006WBVSV6",
+    "url": "https://www.amazon.com/dp/B006WBVSV6",
+    "title": "FAGE Total 0% Plain 32oz (fixture)",
+    "price_raw": "$6.96",
+    "price": 6.96,
+    "fresh_available": false,
+    "fresh_price": null,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B0D7J7595Z",
+    "url": "https://www.amazon.com/dp/B0D7J7595Z",
+    "title": "365 by Whole Foods Plain Nonfat 32oz (fixture)",
+    "price_raw": "$4.99",
+    "price": 4.99,
+    "fresh_available": false,
+    "fresh_price": null,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B007MPI6D4",
+    "url": "https://www.amazon.com/dp/B007MPI6D4",
+    "title": "Greek Gods Honey Vanilla 24oz (fixture)",
+    "price_raw": "$3.88",
+    "price": 3.88,
+    "fresh_available": false,
+    "fresh_price": null,
+    "html_bytes": 0,
+    "ok": true
+  }
+]

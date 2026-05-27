@@ -42,7 +42,21 @@ def amazon_url(asin: str) -> str:
     return f"https://www.amazon.com/dp/{asin}"
 
 
-def compute_row(asin: str, price: float, nut: dict) -> dict:
+def compute_row(
+    asin: str,
+    price: float,
+    nut: dict,
+    *,
+    fresh_available: bool | None = None,
+    fresh_price: float | None = None,
+) -> dict:
+    """Build a single ranked-row dict.
+
+    Channel reflects whether the product is purchasable on Amazon Fresh.
+    Priority: explicit `fresh_available` from scrape.py > nutrition entry's
+    `channel` field > default "regular". When fresh_price is set and the
+    product is Fresh-eligible, that price drives the $/g math (it's the
+    actual price the user would pay)."""
     protein_per_serving = nut["protein_per_serving_g"]
     servings = nut["servings_per_container"]
     if protein_per_serving <= 0 or servings <= 0:
@@ -55,16 +69,30 @@ def compute_row(asin: str, price: float, nut: dict) -> dict:
         raise ValueError(f"{asin}: leucine_per_serving_g must be > 0 (got {leucine})")
 
     total_protein_g = servings * protein_per_serving
-    dollar_per_g = price / total_protein_g
+    # Tight conditional: `fresh_price` may be 0.0 in pathological data; treat
+    # only None as "no fresh price set" so a sub-zero price doesn't quietly
+    # fall through to the regular price.
+    effective_price = (
+        fresh_price if (fresh_available and fresh_price is not None) else price
+    )
+    dollar_per_g = effective_price / total_protein_g
     cal_protein = nut["calories_per_serving"] / protein_per_serving
     leucine_fraction = leucine / protein_per_serving
     leucine_adjusted = dollar_per_g * (WHEY_ISOLATE_LEUCINE_FRACTION / leucine_fraction)
+
+    if fresh_available is True:
+        channel = "fresh"
+    elif fresh_available is False:
+        channel = "regular"
+    else:
+        channel = nut.get("channel") or "regular"
 
     return {
         "asin": asin,
         "name": nut["name"],
         "type": nut["type"],
-        "price": price,
+        "channel": channel,
+        "price": effective_price,
         "total_protein_g": total_protein_g,
         "dollar_per_g_protein": round(dollar_per_g, 4),
         "cal_protein": round(cal_protein, 2),
@@ -73,26 +101,49 @@ def compute_row(asin: str, price: float, nut: dict) -> dict:
     }
 
 
-def format_table(rows: list[dict]) -> str:
+def format_table(rows: list[dict], sort_key: str = "dollar_per_g_protein") -> str:
+    """Render ranked rows as a markdown table. Includes a '% Δ vs prev' column
+    showing how much each row's sort metric differs from the row above.
+    The top row's delta is em-dash since there's no prior row.
+
+    `sort_key` defaults to dollar_per_g_protein but should match the actual
+    sort that produced the row order — otherwise the % column is meaningless."""
     header = (
-        "| Product | Type | Price | Total protein | $/g protein | "
-        "Cal:protein | Leucine-adj $/g | Buy |\n"
-        "|---|---|---:|---:|---:|---:|---:|:---:|"
+        "| Product | Type | Channel | Price | Total protein | $/g protein | "
+        "% Δ vs prev | Cal:protein | Leucine-adj $/g | Buy |\n"
+        "|---|---|:---:|---:|---:|---:|---:|---:|---:|:---:|"
     )
     lines = [header]
+    prev_metric: float | None = None
     for r in rows:
         url = r.get("url") or amazon_url(r["asin"])
+        channel = r.get("channel") or "regular"
+        cur = r[sort_key]
+        if prev_metric is None or prev_metric == 0:
+            delta_str = "—"
+        else:
+            delta_pct = (cur - prev_metric) / prev_metric * 100
+            if delta_pct == 0:
+                delta_str = "0.0%"
+            else:
+                sign = "+" if delta_pct > 0 else ""
+                delta_str = f"{sign}{delta_pct:.1f}%"
+        prev_metric = cur
         lines.append(
-            f"| {r['name']} | {r['type']} | ${r['price']:.2f} | "
+            f"| {r['name']} | {r['type']} | {channel} | ${r['price']:.2f} | "
             f"{r['total_protein_g']:,} g | ${r['dollar_per_g_protein']:.4f} | "
-            f"{r['cal_protein']:.2f} | ${r['leucine_adjusted']:.4f} | "
+            f"{delta_str} | {r['cal_protein']:.2f} | ${r['leucine_adjusted']:.4f} | "
             f"[link]({url}) |"
         )
     return "\n".join(lines)
 
 
 def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
-    """Compute ranked rows + skip categories. Pure function — no I/O."""
+    """Compute ranked rows + skip categories. Pure function — no I/O.
+
+    The Channel column on each row is derived from each price entry's
+    `fresh_available` field (set by scrape.py when --zip is passed). If
+    that field is absent, falls back to the nutrition entry's `channel`."""
     rows: list[dict] = []
     missing_nut: list[str] = []
     missing_price: list[str] = []
@@ -112,7 +163,15 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
             missing_nut.append(asin)
             continue
         try:
-            rows.append(compute_row(asin, price, nut))
+            rows.append(
+                compute_row(
+                    asin,
+                    price,
+                    nut,
+                    fresh_available=entry.get("fresh_available"),
+                    fresh_price=entry.get("fresh_price"),
+                )
+            )
         except ValueError as e:
             invalid_nut.append(f"{asin} ({e})")
 
@@ -133,7 +192,7 @@ def print_report(result: dict, unknown_search_hits: list[dict] | None = None) ->
     can pipe stdout to a file and get a clean markdown table."""
     rows = result["rows"]
     if rows:
-        print(format_table(rows))
+        print(format_table(rows, sort_key=result["sort"]))
         print()
     print(f"Sorted by: {result['sort']}")
     print(f"Ranked: {len(rows)} products")

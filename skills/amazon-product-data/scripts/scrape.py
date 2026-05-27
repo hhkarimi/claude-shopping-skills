@@ -39,6 +39,11 @@ THROTTLE_MARKERS = (
 )
 
 PRICE_SELECTORS = [
+    # Most specific: Amazon's modern "Apex" main-product-price element.
+    # Excludes per-unit prices like "$2.04 / count" which live in a sibling
+    # element with class apex-priceperunit-value.
+    ".apex-pricetopay-value .a-offscreen",
+    "#corePriceDisplay_desktop_feature_div .a-price.aok-align-center .a-offscreen",
     "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
     "#corePrice_feature_div .a-price .a-offscreen",
     "#apex_desktop .a-price .a-offscreen",
@@ -157,16 +162,40 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
         else:
             result["title"] = ""
 
+        # Walk PRICE_SELECTORS in priority order; for each, iterate ALL matches
+        # and pick the first price >= $1. Sub-$1 hits are almost always
+        # per-unit displays like "$0.22 / ounce", not the product price.
         price_text = None
+        price_val: float | None = None
+        any_candidate_seen = False
         for sel in PRICE_SELECTORS:
             loc = page.locator(sel)
-            if await loc.count():
-                price_text = await loc.first.text_content()
-                if price_text and "$" in price_text:
-                    break
+            n = await loc.count()
+            for i in range(n):
+                text = (await loc.nth(i).text_content()) or ""
+                if "$" not in text:
+                    continue
+                m = PRICE_RE.search(text)
+                if not m:
+                    continue
+                any_candidate_seen = True
+                val = float(m.group(1))
+                if val < 1.0:
+                    continue  # skip per-unit prices
+                price_text = text
+                price_val = val
+                break
+            if price_val is not None:
+                break
+        if price_val is None and any_candidate_seen:
+            print(
+                f"WARN: {asin}: all price candidates were sub-$1 (likely "
+                f"per-unit displays). Returning price=None. Check the HTML "
+                f"artifact and consider adding a more specific selector.",
+                file=sys.stderr,
+            )
         result["price_raw"] = (price_text or "").strip()
-        m = PRICE_RE.search(price_text or "")
-        result["price"] = float(m.group(1)) if m else None
+        result["price"] = price_val
 
         if with_fresh:
             fresh_available, fresh_price = await _detect_fresh(page)
