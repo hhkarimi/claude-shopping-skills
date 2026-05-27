@@ -53,10 +53,10 @@ def test_nutrition_data_schema(path: Path):
         )
 
         # Calorie:protein ratio sanity-check (pure protein is 4 cal/g; real
-        # foods top out around 20 cal/g for high-fat bars). Outside this
-        # range is almost certainly a typo.
+        # foods top out around 35 cal/g for very-sweetened yogurts and
+        # dessert-style snacks). Outside this range is almost certainly a typo.
         ratio = entry["calories_per_serving"] / entry["protein_per_serving_g"]
-        assert 3.5 < ratio < 25, (
+        assert 3.5 < ratio < 40, (
             f"{path}/{asin}: cal:protein ratio {ratio:.2f} outside plausible "
-            f"range (3.5-25) — likely a data entry error"
+            f"range (3.5-40) — likely a data entry error"
         )

@@ -42,7 +42,21 @@ def amazon_url(asin: str) -> str:
     return f"https://www.amazon.com/dp/{asin}"
 
 
-def compute_row(asin: str, price: float, nut: dict) -> dict:
+def compute_row(
+    asin: str,
+    price: float,
+    nut: dict,
+    *,
+    fresh_available: bool | None = None,
+    fresh_price: float | None = None,
+) -> dict:
+    """Build a single ranked-row dict.
+
+    Channel reflects whether the product is purchasable on Amazon Fresh.
+    Priority: explicit `fresh_available` from scrape.py > nutrition entry's
+    `channel` field > default "regular". When fresh_price is set and the
+    product is Fresh-eligible, that price drives the $/g math (it's the
+    actual price the user would pay)."""
     protein_per_serving = nut["protein_per_serving_g"]
     servings = nut["servings_per_container"]
     if protein_per_serving <= 0 or servings <= 0:
@@ -55,16 +69,25 @@ def compute_row(asin: str, price: float, nut: dict) -> dict:
         raise ValueError(f"{asin}: leucine_per_serving_g must be > 0 (got {leucine})")
 
     total_protein_g = servings * protein_per_serving
-    dollar_per_g = price / total_protein_g
+    effective_price = fresh_price if (fresh_available and fresh_price) else price
+    dollar_per_g = effective_price / total_protein_g
     cal_protein = nut["calories_per_serving"] / protein_per_serving
     leucine_fraction = leucine / protein_per_serving
     leucine_adjusted = dollar_per_g * (WHEY_ISOLATE_LEUCINE_FRACTION / leucine_fraction)
+
+    if fresh_available is True:
+        channel = "fresh"
+    elif fresh_available is False:
+        channel = "regular"
+    else:
+        channel = nut.get("channel") or "regular"
 
     return {
         "asin": asin,
         "name": nut["name"],
         "type": nut["type"],
-        "price": price,
+        "channel": channel,
+        "price": effective_price,
         "total_protein_g": total_protein_g,
         "dollar_per_g_protein": round(dollar_per_g, 4),
         "cal_protein": round(cal_protein, 2),
@@ -75,15 +98,16 @@ def compute_row(asin: str, price: float, nut: dict) -> dict:
 
 def format_table(rows: list[dict]) -> str:
     header = (
-        "| Product | Type | Price | Total protein | $/g protein | "
+        "| Product | Type | Channel | Price | Total protein | $/g protein | "
         "Cal:protein | Leucine-adj $/g | Buy |\n"
-        "|---|---|---:|---:|---:|---:|---:|:---:|"
+        "|---|---|:---:|---:|---:|---:|---:|---:|:---:|"
     )
     lines = [header]
     for r in rows:
         url = r.get("url") or amazon_url(r["asin"])
+        channel = r.get("channel") or "regular"
         lines.append(
-            f"| {r['name']} | {r['type']} | ${r['price']:.2f} | "
+            f"| {r['name']} | {r['type']} | {channel} | ${r['price']:.2f} | "
             f"{r['total_protein_g']:,} g | ${r['dollar_per_g_protein']:.4f} | "
             f"{r['cal_protein']:.2f} | ${r['leucine_adjusted']:.4f} | "
             f"[link]({url}) |"
@@ -92,7 +116,11 @@ def format_table(rows: list[dict]) -> str:
 
 
 def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
-    """Compute ranked rows + skip categories. Pure function — no I/O."""
+    """Compute ranked rows + skip categories. Pure function — no I/O.
+
+    The Channel column on each row is derived from each price entry's
+    `fresh_available` field (set by scrape.py when --zip is passed). If
+    that field is absent, falls back to the nutrition entry's `channel`."""
     rows: list[dict] = []
     missing_nut: list[str] = []
     missing_price: list[str] = []
@@ -112,7 +140,15 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
             missing_nut.append(asin)
             continue
         try:
-            rows.append(compute_row(asin, price, nut))
+            rows.append(
+                compute_row(
+                    asin,
+                    price,
+                    nut,
+                    fresh_available=entry.get("fresh_available"),
+                    fresh_price=entry.get("fresh_price"),
+                )
+            )
         except ValueError as e:
             invalid_nut.append(f"{asin} ({e})")
 

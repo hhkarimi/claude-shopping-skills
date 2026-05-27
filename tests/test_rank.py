@@ -132,6 +132,7 @@ def test_format_table_includes_header_and_rows_and_url():
             "asin": "B000A1B2C3",
             "name": "A",
             "type": "whey_isolate",
+            "channel": "regular",
             "price": 50.0,
             "total_protein_g": 1000,
             "dollar_per_g_protein": 0.05,
@@ -142,10 +143,87 @@ def test_format_table_includes_header_and_rows_and_url():
     ]
     out = format_table(rows)
     assert "| Product |" in out
+    assert "| Channel |" in out
     assert "| Buy |" in out
     assert "| A |" in out
+    assert "| regular |" in out
     assert "$0.0500" in out
     assert "[link](https://www.amazon.com/dp/B000A1B2C3)" in out
+
+
+def test_compute_row_channel_from_fresh_available_true():
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 17,
+        "calories_per_serving": 100,
+        "leucine_per_serving_g": 1.5,
+    }
+    row = compute_row("B0FRESH001", 5.99, nut, fresh_available=True)
+    assert row["channel"] == "fresh"
+
+
+def test_compute_row_channel_from_fresh_available_false():
+    nut = {
+        "name": "Test",
+        "type": "whey_isolate",
+        "servings_per_container": 10,
+        "protein_per_serving_g": 25,
+        "calories_per_serving": 110,
+        "leucine_per_serving_g": 2.75,
+    }
+    row = compute_row("B0REGULAR1", 20.0, nut, fresh_available=False)
+    assert row["channel"] == "regular"
+
+
+def test_compute_row_respects_nutrition_channel_default_when_unknown():
+    """If fresh_available is None (--prices mode), fall back to the nutrition
+    entry's `channel` field."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "channel": "fresh",
+        "servings_per_container": 1,
+        "protein_per_serving_g": 14,
+        "calories_per_serving": 110,
+        "leucine_per_serving_g": 1.4,
+    }
+    row = compute_row("B0FRESH002", 3.29, nut)
+    assert row["channel"] == "fresh"
+
+
+def test_compute_row_uses_fresh_price_for_dollar_per_g_when_set():
+    """When fresh_available is true AND a separate fresh_price exists, that
+    Fresh price drives the $/g math because it's what the user would pay."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 18,
+        "calories_per_serving": 90,
+        "leucine_per_serving_g": 1.7,
+    }
+    row = compute_row("B0FAGE0001", 7.96, nut, fresh_available=True, fresh_price=6.96)
+    assert row["price"] == 6.96
+    # 6.96 / (4 * 18) = 0.0967
+    assert row["dollar_per_g_protein"] == 0.0967
+
+
+def test_compute_row_falls_back_to_regular_price_when_no_fresh_price():
+    """If fresh_available=true but no separate fresh_price, the regular price
+    is the Fresh price (Fresh-exclusive listings)."""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 18,
+        "calories_per_serving": 90,
+        "leucine_per_serving_g": 1.7,
+    }
+    row = compute_row("B0FAGE0002", 6.96, nut, fresh_available=True)
+    assert row["price"] == 6.96
+    assert row["channel"] == "fresh"
 
 
 def test_compute_row_includes_amazon_url():

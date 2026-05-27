@@ -1,0 +1,92 @@
+{
+  "B0D7J7595Z": {
+    "name": "365 by Whole Foods Greek Yogurt, Plain Nonfat, 32 oz",
+    "type": "plain_nonfat",
+    "channel": "regular",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.5
+  },
+  "B008U5OSTQ": {
+    "name": "Chobani Non-Fat Plain Greek Yogurt, 32 oz",
+    "type": "plain_nonfat",
+    "channel": "regular",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.5
+  },
+  "B006WBVSV6": {
+    "name": "FAGE Total 0% Nonfat Plain Greek Yogurt, 32 oz",
+    "type": "plain_nonfat",
+    "channel": "regular",
+    "servings_per_container": 5,
+    "protein_per_serving_g": 18,
+    "calories_per_serving": 90,
+    "leucine_per_serving_g": 1.7
+  },
+  "B004B3KMTQ": {
+    "name": "Chobani Whole Milk Plain Greek Yogurt, 32 oz",
+    "type": "plain_whole_milk",
+    "channel": "regular",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 15,
+    "calories_per_serving": 150,
+    "leucine_per_serving_g": 1.4
+  },
+  "B00FZHEGGW": {
+    "name": "FAGE Total 2% Plain Greek Yogurt, 32 oz",
+    "type": "plain_lowfat",
+    "channel": "regular",
+    "servings_per_container": 5,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 1.6
+  },
+  "B00WTR0CDM": {
+    "name": "FAGE Total 5% Whole Milk Plain Greek Yogurt, 32 oz",
+    "type": "plain_whole_milk",
+    "channel": "regular",
+    "servings_per_container": 5,
+    "protein_per_serving_g": 16,
+    "calories_per_serving": 190,
+    "leucine_per_serving_g": 1.5
+  },
+  "B07MYG86VS": {
+    "name": "Organic Greek Whole Milk Yogurt, Plain, 32 oz",
+    "type": "plain_whole_milk",
+    "channel": "regular",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 14,
+    "calories_per_serving": 150,
+    "leucine_per_serving_g": 1.3
+  },
+  "B00CJ8MJG4": {
+    "name": "Chobani Vanilla Blended Non-Fat Greek Yogurt, 32 oz",
+    "type": "flavored_nonfat",
+    "channel": "regular",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.1
+  },
+  "B0D7J7D44Q": {
+    "name": "365 by Whole Foods Greek Yogurt, Nonfat Vanilla, 32 oz",
+    "type": "flavored_nonfat",
+    "channel": "regular",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.1
+  },
+  "B007MPI6D4": {
+    "name": "The Greek Gods Greek Yogurt, Honey Vanilla, 24 oz",
+    "type": "flavored_whole_milk",
+    "channel": "regular",
+    "servings_per_container": 3,
+    "protein_per_serving_g": 6,
+    "calories_per_serving": 200,
+    "leucine_per_serving_g": 0.5
+  }
+}
