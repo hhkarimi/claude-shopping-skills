@@ -1,0 +1,29 @@
+[
+  {
+    "asin": "B0094IXKME",
+    "url": "https://www.amazon.com/dp/B0094IXKME",
+    "title": "Seapoint Farms 27 oz Jar (fixture)",
+    "price_raw": "$18.79",
+    "price": 18.79,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B09FFXR2VV",
+    "url": "https://www.amazon.com/dp/B09FFXR2VV",
+    "title": "The Only Bean 10-pack (fixture)",
+    "price_raw": "$12.72",
+    "price": 12.72,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B0G1KSD25Y",
+    "url": "https://www.amazon.com/dp/B0G1KSD25Y",
+    "title": "Food to Live 6 lb Bulk (fixture)",
+    "price_raw": "$44.99",
+    "price": 44.99,
+    "html_bytes": 0,
+    "ok": true
+  }
+]
