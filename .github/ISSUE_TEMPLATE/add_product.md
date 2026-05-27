@@ -1,16 +1,20 @@
 ---
 name: Add a product
-about: Request a new product be added to the protein-powder ranker
+about: Request a new product be added to a rank-* skill's nutrition database
 title: '[Add product] '
 labels: enhancement
 assignees: hhkarimi
 ---
 
+## Which skill?
+
+<!-- e.g. rank-protein-powders, rank-protein-bars, rank-dry-edamame -->
+
 ## Product info
 
 - **Amazon URL or ASIN:**
 - **Brand and product name:**
-- **Tub size:**
+- **Tub / box / pack size:**
 
 ## Nutrition (from the manufacturer's label)
 
@@ -18,7 +22,7 @@ assignees: hhkarimi
 - **Protein per serving (g):**
 - **Calories per serving:**
 - **Leucine per serving (g):** <!-- if not on label, leave blank — maintainer will estimate from type -->
-- **Type:** <!-- whey_isolate / whey_concentrate / whey_blend / pea / soy / egg / pea_rice_blend -->
+- **Type:** <!-- see the target skill's SKILL.md for valid type values -->
 
 ## Why add this one?
 
