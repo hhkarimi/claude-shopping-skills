@@ -40,7 +40,12 @@ Re-sort with `--sort cal_protein` or `--sort leucine_adjusted`.
 
 ### Amazon Fresh comparisons (optional)
 
-If the user asks about Amazon Fresh availability or prices, **ask them for a 5-digit US ZIP code first**, then pass it via `--zip`:
+**Before running the ranker, proactively ask the user:**
+
+> Would you like to include Amazon Fresh availability and prices in the comparison? This requires a 5-digit US ZIP code so the scraper can set the delivery location.
+
+- If yes → ask for the ZIP (5 digits, US only), then add `--zip <code>` to the rank command.
+- If no → run without `--zip`; Fresh fields will be `false`/`null`.
 
 ```bash
 uv run scripts/rank.py --search "protein bar low sugar" --zip 02139 \
