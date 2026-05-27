@@ -1,0 +1,34 @@
+{
+  "B016MEN14O": {
+    "name": "Quest Nutrition Chocolate Lovers Variety, 12 ct",
+    "type": "whey_milk_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 21,
+    "calories_per_serving": 200,
+    "leucine_per_serving_g": 1.9
+  },
+  "B0FN7MFN37": {
+    "name": "BUILT Puff Bar Chocolate Milkshake, 12 ct",
+    "type": "whey_collagen_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.4
+  },
+  "B00GJ82VK4": {
+    "name": "Pure Protein Chocolate Peanut Butter, 12 ct",
+    "type": "whey_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 190,
+    "leucine_per_serving_g": 1.9
+  },
+  "B0C2GKS8JZ": {
+    "name": "Perfect Bar Variety Pack, Refrigerated, 8 ct",
+    "type": "peanut_butter_honey",
+    "servings_per_container": 8,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 320,
+    "leucine_per_serving_g": 1.4
+  }
+}
