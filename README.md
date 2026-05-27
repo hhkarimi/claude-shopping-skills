@@ -6,7 +6,7 @@ Ships two skills:
 
 | Skill | Purpose |
 |---|---|
-| `amazon-product-data` | Scrape live Amazon product data (title, price, raw HTML, screenshot) for given ASINs. Uses stealth-enabled headless Chromium to bypass AWS WAF bot challenges. |
+| `amazon-product-data` | Search Amazon for products and scrape live product pages (title, price, rating, raw HTML, screenshot). Two scripts: `search.py` for discovering ASINs from a query, `scrape.py` for full product detail. Uses stealth-enabled headless Chromium to bypass AWS WAF bot challenges. |
 | `rank-protein-powders` | Rank protein powders by $/g protein, calorie:protein ratio, and leucine-adjusted cost. Ships with a 12-product curated nutrition database. |
 
 ## Install
@@ -27,7 +27,7 @@ Or clone manually and reference locally.
 
 ## Quick start
 
-Rank the default set of protein powders by live Amazon price:
+### Rank the default set of protein powders
 
 ```bash
 cd skills/rank-protein-powders
@@ -36,11 +36,34 @@ uv run ../amazon-product-data/scripts/scrape.py $ASINS
 uv run scripts/rank.py --prices /tmp/amzn/results.json --nutrition references/nutrition_data.json
 ```
 
-Scrape arbitrary Amazon products:
+### Discover new candidates from a search query
+
+```bash
+uv run skills/amazon-product-data/scripts/search.py "pea protein 5 lb" --max-results 20
+cat /tmp/amzn/search_results.json
+```
+
+### Scrape arbitrary Amazon products
 
 ```bash
 uv run skills/amazon-product-data/scripts/scrape.py B000MAK59O B01HOPJAAE
 cat /tmp/amzn/results.json
+```
+
+### Full pipeline (search → scrape → rank)
+
+```bash
+# 1. Find candidates
+uv run skills/amazon-product-data/scripts/search.py "whey protein isolate" --max-results 20
+
+# 2. Pick promising ASINs, add nutrition data to nutrition_data.json if missing,
+#    then scrape full detail
+uv run skills/amazon-product-data/scripts/scrape.py B00... B01...
+
+# 3. Rank
+uv run skills/rank-protein-powders/scripts/rank.py \
+  --prices /tmp/amzn/results.json \
+  --nutrition skills/rank-protein-powders/references/nutrition_data.json
 ```
 
 ## How it works
@@ -65,6 +88,17 @@ Edit `skills/rank-protein-powders/references/nutrition_data.json`:
 ```
 
 Leucine fractions if the label doesn't publish: whey isolate 11%, whey concentrate 10%, egg 8.5%, soy/pea/blends 8%.
+
+## Development
+
+Run the same checks CI runs:
+
+```bash
+uvx ruff check .                           # lint
+uvx ruff format --check .                  # formatting
+python3 tests/validate_skills.py           # SKILL.md frontmatter
+uvx --with pytest pytest tests -v          # unit + CLI tests
+```
 
 ## License
 

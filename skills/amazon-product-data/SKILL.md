@@ -1,11 +1,16 @@
 ---
 name: amazon-product-data
-description: Scrape live Amazon product data (title, price, raw HTML, screenshot) for a list of ASINs using a stealth-enabled headless browser. Use when you need current Amazon pricing or product details for comparison shopping. Bypasses Amazon's AWS WAF bot challenge via Playwright + playwright-stealth.
+description: Search Amazon for products and scrape live product pages (title, price, rating, raw HTML, screenshot). Two scripts — `search.py` finds candidate ASINs from a query, `scrape.py` pulls full product detail for known ASINs. Uses Playwright + stealth to bypass Amazon's AWS WAF bot challenge.
 ---
 
 # Amazon product data scraper
 
-Fetch current price + product title + raw page HTML from Amazon product pages, bypassing Amazon's bot challenge.
+Two complementary scripts for Amazon data:
+
+- **`search.py`** — given a query, returns a list of candidate ASINs with title, price, rating, and review count from the search results page.
+- **`scrape.py`** — given known ASINs, fetches full product detail pages and extracts title + price.
+
+Together they support a "discover → confirm → rank" workflow.
 
 ## When to use
 
@@ -21,27 +26,52 @@ Fetch current price + product title + raw page HTML from Amazon product pages, b
 
 ## How to use
 
-The scraper is `scripts/scrape.py`, a PEP 723 inline-deps Python script. Invoke with `uv run`:
+Both scripts are PEP 723 inline-deps Python — run with `uv run`. Default output dir is `/tmp/amzn/`.
+
+### Search
+
+```bash
+uv run scripts/search.py "<query>" [--max-results 20] [--out /path/to/dir]
+```
+
+Writes:
+- `search_results.json` — list of `{asin, url, title, price_raw, price, rating, review_count}` objects (one per result card)
+- `search.png` — screenshot of the results page
+- `search.html` — full rendered HTML
+
+Example:
+```bash
+uv run scripts/search.py "pea protein 5 lb" --max-results 10
+```
+
+### Scrape (for known ASINs)
 
 ```bash
 uv run scripts/scrape.py <ASIN1> <ASIN2> ... [--out /path/to/dir]
 ```
 
-Each ASIN is a 10-character Amazon product identifier (e.g. `B000MAK59O`). Default output directory is `/tmp/amzn/`.
+Each ASIN is a 10-character Amazon product identifier (e.g. `B000MAK59O`).
 
-### Output
-
-Writes to the output directory:
+Writes:
 - `results.json` — list of `{asin, url, title, price_raw, price, html_bytes, ok}` objects
-- `<asin>.png` — viewport screenshot of each product page
-- `<asin>.html` — full rendered HTML
+- `<asin>.png` — viewport screenshot per product
+- `<asin>.html` — full rendered HTML per product
 
-Also prints `results.json` to stdout for piping.
-
-### Example
-
+Example:
 ```bash
 uv run scripts/scrape.py B000MAK59O B01HOPJAAE B002TG3QPO
+```
+
+### Typical pipeline
+
+```bash
+# 1. Discover candidates
+uv run scripts/search.py "whey protein isolate 5 lb" --max-results 20
+
+# 2. Inspect search_results.json, pick promising ASINs
+
+# 3. Pull full detail (price, rendered HTML for nutrition extraction, etc.)
+uv run scripts/scrape.py B000... B01...
 ```
 
 ## Requirements
@@ -51,6 +81,7 @@ uv run scripts/scrape.py B000MAK59O B01HOPJAAE B002TG3QPO
 
 ## Troubleshooting
 
-- **All prices come back null** — Amazon updated its DOM. Edit the selector fallback list in `scrape.py` (`for sel in [...]`).
+- **All prices come back null** — Amazon updated its DOM. Edit the selector fallback list in `scrape.py` (`PRICE_SELECTORS`).
+- **`search.py` returns empty** — Amazon's search-result card markup changed. Update the `[data-component-type="s-search-result"]` selector and field selectors in `parse_card`.
 - **Chromium not found** — run `uv run --with playwright playwright install chromium`.
-- **AWS WAF challenge page returned** — the stealth shim may have broken. Bump `playwright-stealth` in the PEP 723 header.
+- **AWS WAF challenge page returned** — the stealth shim may have broken. Bump `playwright-stealth` in the PEP 723 header of the affected script.

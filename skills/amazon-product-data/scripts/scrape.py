@@ -10,6 +10,7 @@
 Usage:
     uv run scrape.py <ASIN1> <ASIN2> ... [--out /path/to/dir]
 """
+
 import argparse
 import asyncio
 import json
