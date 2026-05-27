@@ -38,6 +38,17 @@ uv run scripts/rank.py --prices /tmp/amzn/results.json \
 
 Re-sort with `--sort cal_protein` or `--sort leucine_adjusted`.
 
+### Amazon Fresh comparisons (optional)
+
+If the user asks about Amazon Fresh availability or prices, **ask them for a 5-digit US ZIP code first**, then pass it via `--zip`:
+
+```bash
+uv run scripts/rank.py --search "whey protein isolate" --zip 02139 \
+  --nutrition references/nutrition_data.json
+```
+
+The scraper sets Amazon's delivery location to that ZIP and records `fresh_available` + `fresh_price` per product in `results.json`. Note: protein powders are supplements and rarely Fresh-eligible — most results will show `fresh_available: false` even with a valid ZIP. Fresh data is most useful for refrigerated / grocery-style products.
+
 ## Domain-specific schema notes
 
 Shared schema documented in [CONTRIBUTING.md](../../CONTRIBUTING.md#add-a-product-to-a-rank--skill). Valid `type` values for this skill and their approximate leucine fractions:

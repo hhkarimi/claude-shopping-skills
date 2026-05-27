@@ -39,6 +39,17 @@ uv run scripts/rank.py --prices /tmp/amzn/results.json \
 
 Re-sort with `--sort cal_protein` or `--sort leucine_adjusted`.
 
+### Amazon Fresh comparisons (optional)
+
+If the user asks about Amazon Fresh availability or prices, **ask them for a 5-digit US ZIP code first**, then pass it via `--zip`:
+
+```bash
+uv run scripts/rank.py --search "dry roasted edamame" --zip 02139 \
+  --nutrition references/nutrition_data.json
+```
+
+Edamame is shelf-stable rather than refrigerated, so Fresh coverage varies — Seapoint Farms is sometimes Fresh-eligible but the bulk/snack-pack variants usually aren't.
+
 ## Domain-specific schema notes
 
 Shared schema documented in [CONTRIBUTING.md](../../CONTRIBUTING.md#add-a-product-to-a-rank--skill). Only one `type` value here:

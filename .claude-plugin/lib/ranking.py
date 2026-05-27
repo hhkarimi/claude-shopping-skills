@@ -264,19 +264,24 @@ def _run_search(query: str, max_results: int, out_dir: Path) -> list[dict]:
     return json.loads((out_dir / "search_results.json").read_text(encoding="utf-8-sig"))
 
 
-def _run_scrape(asins: list[str], out_dir: Path) -> list[dict]:
+def _run_scrape(
+    asins: list[str], out_dir: Path, zip_code: str | None = None
+) -> list[dict]:
     """Shell out to scrape.py and parse its JSON output."""
     out_dir.mkdir(parents=True, exist_ok=True)
     timeout = SCRAPE_BASE_TIMEOUT_S + SCRAPE_PER_ASIN_S * len(asins)
+    cmd = [
+        "uv",
+        "run",
+        str(AMAZON_SCRIPTS_DIR / "scrape.py"),
+        *asins,
+        "--out",
+        str(out_dir),
+    ]
+    if zip_code:
+        cmd += ["--zip", zip_code]
     _run_subprocess(
-        [
-            "uv",
-            "run",
-            str(AMAZON_SCRIPTS_DIR / "scrape.py"),
-            *asins,
-            "--out",
-            str(out_dir),
-        ],
+        cmd,
         description=f"Amazon scrape of {len(asins)} ASINs",
         timeout=timeout,
         artifact_dir=out_dir,
@@ -320,6 +325,13 @@ def run_cli(description: str) -> None:
         "(default: <system temp>/amzn). Artifacts accumulate over runs — "
         "clean periodically.",
     )
+    ap.add_argument(
+        "--zip",
+        dest="zip_code",
+        default=None,
+        help="With --search: pass this US ZIP code through to scrape.py, which "
+        "annotates each product with fresh_available + fresh_price.",
+    )
     args = ap.parse_args()
 
     # Distinguish "not passed" (None) from "passed empty" (""). argparse's
@@ -362,7 +374,7 @@ def run_cli(description: str) -> None:
                 flush=True,
             )
             asins = [r["asin"] for r in known]
-            prices = _run_scrape(asins, args.out)
+            prices = _run_scrape(asins, args.out, zip_code=args.zip_code)
         else:
             prices = json.loads(args.prices.read_text(encoding="utf-8-sig"))
     except SearchPipelineError as e:

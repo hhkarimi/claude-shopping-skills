@@ -38,6 +38,17 @@ uv run scripts/rank.py --prices /tmp/amzn/results.json \
 
 Re-sort with `--sort cal_protein` or `--sort leucine_adjusted`.
 
+### Amazon Fresh comparisons (optional)
+
+If the user asks about Amazon Fresh availability or prices, **ask them for a 5-digit US ZIP code first**, then pass it via `--zip`:
+
+```bash
+uv run scripts/rank.py --search "protein bar low sugar" --zip 02139 \
+  --nutrition references/nutrition_data.json
+```
+
+Some protein bars (particularly mainstream brands like Quest, Pure Protein) are Fresh-eligible in many zones — Fresh data is more useful here than for powders.
+
 ## Domain-specific schema notes
 
 Shared schema documented in [CONTRIBUTING.md](../../CONTRIBUTING.md#add-a-product-to-a-rank--skill). A bar counts as one serving (`servings_per_container` = bars per box). Valid `type` values and their approximate leucine fractions:
