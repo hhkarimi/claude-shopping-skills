@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Ruff lint
+        run: uvx ruff check .
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Validate plugin.json
+        run: python3 -c "import json; json.load(open('.claude-plugin/plugin.json'))"
+      - name: Validate nutrition_data.json
+        run: python3 -c "import json; json.load(open('skills/rank-protein-powders/references/nutrition_data.json'))"
+      - name: Validate SKILL.md frontmatter
+        run: python3 tests/validate_skills.py
+      - name: Smoke test ranker
+        run: uv run skills/rank-protein-powders/scripts/rank.py --prices tests/fixtures/results_sample.json --nutrition skills/rank-protein-powders/references/nutrition_data.json
