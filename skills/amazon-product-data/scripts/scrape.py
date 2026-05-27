@@ -39,6 +39,11 @@ THROTTLE_MARKERS = (
 )
 
 PRICE_SELECTORS = [
+    # Most specific: Amazon's modern "Apex" main-product-price element.
+    # Excludes per-unit prices like "$2.04 / count" which live in a sibling
+    # element with class apex-priceperunit-value.
+    ".apex-pricetopay-value .a-offscreen",
+    "#corePriceDisplay_desktop_feature_div .a-price.aok-align-center .a-offscreen",
     "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
     "#corePrice_feature_div .a-price .a-offscreen",
     "#apex_desktop .a-price .a-offscreen",
