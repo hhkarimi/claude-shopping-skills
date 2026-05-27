@@ -66,6 +66,6 @@ Same heuristic as `rank-protein-powders`: `leucine_adjusted = dollar_per_g_prote
 3. Add an entry to `references/nutrition_data.json`.
 4. Re-run the scrape + rank flow.
 
-## Note on duplication with rank-protein-powders
+## Shared ranker implementation
 
-The ranker script is intentionally a duplicate of `rank-protein-powders/scripts/rank.py`. The math is identical; only the curated data differs. If a third comparison domain is added, extract the shared logic to a top-level module.
+The actual ranking logic lives in `lib/ranking.py` at the repo root. The `scripts/rank.py` in this skill is a thin wrapper that calls into it. The same shared module backs `rank-protein-powders`. To add a new comparison domain, copy this skill's wrapper pattern and provide a new `nutrition_data.json`.

@@ -1,4 +1,4 @@
-"""Unit tests for rank.py."""
+"""Unit tests for lib/ranking.py (shared ranker logic) + the powders rank.py CLI."""
 
 import json
 import subprocess
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from rank import compute_row, format_table
+from ranking import compute_row, format_table
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RANK_SCRIPT = REPO_ROOT / "skills" / "rank-protein-powders" / "scripts" / "rank.py"
@@ -125,10 +125,10 @@ def test_compute_row_leucine_penalty_for_pea():
 # ---------- format_table ----------
 
 
-def test_format_table_includes_header_and_rows():
+def test_format_table_includes_header_and_rows_and_url():
     rows = [
         {
-            "asin": "B000A",
+            "asin": "B000A1B2C3",
             "name": "A",
             "type": "whey_isolate",
             "price": 50.0,
@@ -136,12 +136,28 @@ def test_format_table_includes_header_and_rows():
             "dollar_per_g_protein": 0.05,
             "cal_protein": 4.4,
             "leucine_adjusted": 0.05,
+            "url": "https://www.amazon.com/dp/B000A1B2C3",
         },
     ]
     out = format_table(rows)
     assert "| Product |" in out
+    assert "| Buy |" in out
     assert "| A |" in out
     assert "$0.0500" in out
+    assert "[link](https://www.amazon.com/dp/B000A1B2C3)" in out
+
+
+def test_compute_row_includes_amazon_url():
+    nut = {
+        "name": "Test",
+        "type": "whey_isolate",
+        "servings_per_container": 10,
+        "protein_per_serving_g": 25,
+        "calories_per_serving": 110,
+        "leucine_per_serving_g": 2.75,
+    }
+    row = compute_row("B0ABCDEFGH", 20.0, nut)
+    assert row["url"] == "https://www.amazon.com/dp/B0ABCDEFGH"
 
 
 # ---------- end-to-end CLI ----------

@@ -73,6 +73,20 @@ Amazon blocks plain HTTP scraping with an AWS WAF JavaScript challenge that head
 
 The scraper is a PEP 723 inline-deps Python script — running it with `uv run` creates an ephemeral venv, installs Playwright + stealth, and executes the script. No global Python pollution, no leftover `.venv` directory.
 
+## Repo layout
+
+```
+.claude-plugin/plugin.json
+lib/ranking.py              # shared ranker logic (compute_row, format_table, CLI entry)
+skills/
+  amazon-product-data/      # search.py + scrape.py (stealth Playwright)
+  rank-protein-powders/     # nutrition data + thin rank.py wrapper
+  rank-protein-bars/        # nutrition data + thin rank.py wrapper
+tests/                      # pytest suite (lint, schema validation, CLI smoke tests)
+```
+
+The shared `lib/ranking.py` lets new comparison domains add just a `SKILL.md`, a `nutrition_data.json`, and a tiny `rank.py` wrapper without duplicating math.
+
 ## Adding products to the protein ranker
 
 Edit `skills/rank-protein-powders/references/nutrition_data.json`:

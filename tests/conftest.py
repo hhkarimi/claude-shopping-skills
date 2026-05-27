@@ -1,9 +1,7 @@
-"""Make the rank-protein-powders script importable as a module under tests/."""
+"""Add the shared ranking library to sys.path so tests can import it."""
 
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-# Only add the scripts dir — pytest's rootdir discovery already handles
-# imports under tests/, and adding tests/ to sys.path risks future shadowing.
-sys.path.insert(0, str(REPO_ROOT / "skills" / "rank-protein-powders" / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "lib"))
