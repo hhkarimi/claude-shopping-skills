@@ -1,0 +1,66 @@
+{
+  "B0094IXKME": {
+    "name": "Seapoint Farms Dry Roasted Edamame, Sea Salt, 27 oz Jar",
+    "type": "edamame",
+    "servings_per_container": 27,
+    "protein_per_serving_g": 14,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.1
+  },
+  "B000G2UUOS": {
+    "name": "Seapoint Farms Dry Roasted Edamame, Sea Salt, 4 oz x 12 Bags",
+    "type": "edamame",
+    "servings_per_container": 48,
+    "protein_per_serving_g": 14,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.1
+  },
+  "B00KPTV802": {
+    "name": "Seapoint Farms Dry Roasted Edamame, Light Salted, 0.79 oz x 8 Snack Packs",
+    "type": "edamame",
+    "servings_per_container": 8,
+    "protein_per_serving_g": 9,
+    "calories_per_serving": 80,
+    "leucine_per_serving_g": 0.7
+  },
+  "B09FFXR2VV": {
+    "name": "The Only Bean Crunchy Dry Roasted Edamame, Sea Salt, 0.9 oz x 10 Pack",
+    "type": "edamame",
+    "servings_per_container": 10,
+    "protein_per_serving_g": 11,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 0.9
+  },
+  "B0DM955MGZ": {
+    "name": "Where You Bean Edamame, Truffle Salt, 0.9 oz x 8 Pack",
+    "type": "edamame",
+    "servings_per_container": 8,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 110,
+    "leucine_per_serving_g": 1.0
+  },
+  "B0G1KSD25Y": {
+    "name": "Food to Live Dry Roasted & Salted Edamame, 6 lb Bulk",
+    "type": "edamame",
+    "servings_per_container": 96,
+    "protein_per_serving_g": 14,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.1
+  },
+  "B0FVG5Q5DB": {
+    "name": "NUTS U.S. Dry Roasted & Salted Edamame, 2 lb Resealable Bag",
+    "type": "edamame",
+    "servings_per_container": 32,
+    "protein_per_serving_g": 13,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.0
+  },
+  "B0D4ML6X9H": {
+    "name": "Zest Delites Crunchy Dry Roasted Edamame, Sea Salt, 0.9 oz x 24 Pack",
+    "type": "edamame",
+    "servings_per_container": 24,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.0
+  }
+}

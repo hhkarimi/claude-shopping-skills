@@ -9,6 +9,7 @@ Ships two skills:
 | `amazon-product-data` | Search Amazon for products and scrape live product pages (title, price, rating, raw HTML, screenshot). Two scripts: `search.py` for discovering ASINs from a query, `scrape.py` for full product detail. Uses stealth-enabled headless Chromium to bypass AWS WAF bot challenges. |
 | `rank-protein-powders` | Rank protein powders by $/g protein, calorie:protein ratio, and leucine-adjusted cost. Ships with a 12-product curated nutrition database. |
 | `rank-protein-bars` | Rank protein bars by the same three criteria. Ships with a 12-product curated nutrition database. |
+| `rank-dry-edamame` | Rank dry-roasted edamame snacks by the same three criteria. Ships with an 8-product curated nutrition database. |
 
 ## Install
 
@@ -83,6 +84,7 @@ skills/
   amazon-product-data/      # search.py + scrape.py (stealth Playwright)
   rank-protein-powders/     # nutrition data + thin rank.py wrapper
   rank-protein-bars/        # nutrition data + thin rank.py wrapper
+  rank-dry-edamame/         # nutrition data + thin rank.py wrapper
 tests/                      # pytest suite (lint, schema validation, CLI smoke tests)
 ```
 
