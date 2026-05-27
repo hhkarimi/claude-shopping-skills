@@ -94,5 +94,23 @@
     "protein_per_serving_g": 12,
     "calories_per_serving": 180,
     "leucine_per_serving_g": 1.0
+  },
+  "B0B17P5N3D": {
+    "name": "think! Protein Bars, Brownie Crunch, 12 ct",
+    "type": "whey_blend",
+    "channel": "regular",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 190,
+    "leucine_per_serving_g": 2.0
+  },
+  "B000CRIBCA": {
+    "name": "think! Protein Bars, Brownie Crunch, 10 ct (Amazon Fresh)",
+    "type": "whey_blend",
+    "channel": "fresh",
+    "servings_per_container": 10,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 190,
+    "leucine_per_serving_g": 2.0
   }
 }
