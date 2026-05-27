@@ -70,3 +70,37 @@ def test_fresh_indicators_are_searchable_in_scrape_script():
     assert "amazon-fresh-buybox" in body
     assert "fresh_available" in body
     assert "fresh_price" in body
+
+
+def test_apex_pricetopay_value_is_top_priority_in_price_selectors():
+    r"""Regression guard against the Quest \$2.04 bug.
+
+    On grocery / multi-pack product pages, Amazon's
+    `corePriceDisplay_desktop_feature_div` container can list the per-unit
+    price element BEFORE the main product price in DOM order. The
+    `.apex-pricetopay-value` selector targets only the main 'price to pay'
+    element and must come first in PRICE_SELECTORS to avoid accidentally
+    picking up the per-unit sibling.
+
+    If a future refactor reorders these selectors, this test catches it."""
+    import re
+
+    body = SCRAPE_SCRIPT.read_text(encoding="utf-8")
+    m = re.search(r"PRICE_SELECTORS\s*=\s*\[(.*?)\]", body, re.DOTALL)
+    assert m, "PRICE_SELECTORS not found in scrape.py"
+    # Walk the block line-by-line; skip Python comments. The first quoted
+    # selector after the leading comments is the real top-priority one.
+    selectors = []
+    for line in m.group(1).split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("#") or not stripped:
+            continue
+        sel_match = re.match(r'"([^"]+)"', stripped)
+        if sel_match:
+            selectors.append(sel_match.group(1))
+    assert selectors, "no string selectors found in PRICE_SELECTORS block"
+    assert selectors[0].startswith(".apex-pricetopay-value"), (
+        f"expected first non-comment selector to start with "
+        f".apex-pricetopay-value; got: {selectors[0]!r}. See the docstring "
+        f"above for why this matters."
+    )

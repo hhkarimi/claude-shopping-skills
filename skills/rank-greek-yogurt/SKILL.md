@@ -56,7 +56,7 @@ Re-sort with `--sort cal_protein` or `--sort leucine_adjusted`.
 
 ## Domain-specific schema notes
 
-Shared schema documented in [CONTRIBUTING.md](../../CONTRIBUTING.md#add-a-product-to-a-rank--skill). A Greek-yogurt container is multi-serving — `servings_per_container` is the manufacturer's label count (typically 4 for a 32 oz tub).
+Shared schema documented in [CONTRIBUTING.md](../../CONTRIBUTING.md#add-a-product-to-a-rank--skill). A Greek-yogurt container is multi-serving — `servings_per_container` is the manufacturer's label count. This is typically 4 or 5 for a 32 oz tub depending on the brand: Chobani labels 4, FAGE labels 5 (smaller per-serving size).
 
 Valid `type` values for this skill:
 

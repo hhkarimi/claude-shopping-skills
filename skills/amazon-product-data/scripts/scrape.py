@@ -167,6 +167,7 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
         # per-unit displays like "$0.22 / ounce", not the product price.
         price_text = None
         price_val: float | None = None
+        any_candidate_seen = False
         for sel in PRICE_SELECTORS:
             loc = page.locator(sel)
             n = await loc.count()
@@ -177,6 +178,7 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
                 m = PRICE_RE.search(text)
                 if not m:
                     continue
+                any_candidate_seen = True
                 val = float(m.group(1))
                 if val < 1.0:
                     continue  # skip per-unit prices
@@ -185,6 +187,13 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
                 break
             if price_val is not None:
                 break
+        if price_val is None and any_candidate_seen:
+            print(
+                f"WARN: {asin}: all price candidates were sub-$1 (likely "
+                f"per-unit displays). Returning price=None. Check the HTML "
+                f"artifact and consider adding a more specific selector.",
+                file=sys.stderr,
+            )
         result["price_raw"] = (price_text or "").strip()
         result["price"] = price_val
 

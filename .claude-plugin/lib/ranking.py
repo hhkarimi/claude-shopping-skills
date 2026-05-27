@@ -69,7 +69,12 @@ def compute_row(
         raise ValueError(f"{asin}: leucine_per_serving_g must be > 0 (got {leucine})")
 
     total_protein_g = servings * protein_per_serving
-    effective_price = fresh_price if (fresh_available and fresh_price) else price
+    # Tight conditional: `fresh_price` may be 0.0 in pathological data; treat
+    # only None as "no fresh price set" so a sub-zero price doesn't quietly
+    # fall through to the regular price.
+    effective_price = (
+        fresh_price if (fresh_available and fresh_price is not None) else price
+    )
     dollar_per_g = effective_price / total_protein_g
     cal_protein = nut["calories_per_serving"] / protein_per_serving
     leucine_fraction = leucine / protein_per_serving
@@ -96,29 +101,34 @@ def compute_row(
     }
 
 
-def format_table(rows: list[dict]) -> str:
-    """Render ranked rows as a markdown table. Includes a '% vs prev' column
-    showing how much more expensive each row's $/g protein is vs the row
-    above (the previous-ranked product). The top row's delta is rendered
-    as em-dash since there's no prior row to compare against."""
+def format_table(rows: list[dict], sort_key: str = "dollar_per_g_protein") -> str:
+    """Render ranked rows as a markdown table. Includes a '% Δ vs prev' column
+    showing how much each row's sort metric differs from the row above.
+    The top row's delta is em-dash since there's no prior row.
+
+    `sort_key` defaults to dollar_per_g_protein but should match the actual
+    sort that produced the row order — otherwise the % column is meaningless."""
     header = (
         "| Product | Type | Channel | Price | Total protein | $/g protein | "
-        "% vs prev | Cal:protein | Leucine-adj $/g | Buy |\n"
+        "% Δ vs prev | Cal:protein | Leucine-adj $/g | Buy |\n"
         "|---|---|:---:|---:|---:|---:|---:|---:|---:|:---:|"
     )
     lines = [header]
-    prev_dollar_per_g: float | None = None
+    prev_metric: float | None = None
     for r in rows:
         url = r.get("url") or amazon_url(r["asin"])
         channel = r.get("channel") or "regular"
-        cur = r["dollar_per_g_protein"]
-        if prev_dollar_per_g is None or prev_dollar_per_g == 0:
+        cur = r[sort_key]
+        if prev_metric is None or prev_metric == 0:
             delta_str = "—"
         else:
-            delta_pct = (cur - prev_dollar_per_g) / prev_dollar_per_g * 100
-            sign = "+" if delta_pct >= 0 else ""
-            delta_str = f"{sign}{delta_pct:.1f}%"
-        prev_dollar_per_g = cur
+            delta_pct = (cur - prev_metric) / prev_metric * 100
+            if delta_pct == 0:
+                delta_str = "0.0%"
+            else:
+                sign = "+" if delta_pct > 0 else ""
+                delta_str = f"{sign}{delta_pct:.1f}%"
+        prev_metric = cur
         lines.append(
             f"| {r['name']} | {r['type']} | {channel} | ${r['price']:.2f} | "
             f"{r['total_protein_g']:,} g | ${r['dollar_per_g_protein']:.4f} | "
@@ -182,7 +192,7 @@ def print_report(result: dict, unknown_search_hits: list[dict] | None = None) ->
     can pipe stdout to a file and get a clean markdown table."""
     rows = result["rows"]
     if rows:
-        print(format_table(rows))
+        print(format_table(rows, sort_key=result["sort"]))
         print()
     print(f"Sorted by: {result['sort']}")
     print(f"Ranked: {len(rows)} products")
