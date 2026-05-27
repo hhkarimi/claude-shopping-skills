@@ -19,9 +19,8 @@ import sys
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright.async_api import async_playwright
-from playwright_stealth import Stealth
+# Playwright deps are imported inside search() so --help / arg validation runs
+# without requiring the heavy deps.
 
 ASIN_RE = re.compile(r"^[A-Z0-9]{10}$")
 PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
@@ -84,6 +83,10 @@ async def parse_card(card) -> dict | None:
 
 
 async def search(query: str, max_results: int, out_dir: Path) -> list[dict]:
+    from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+    from playwright.async_api import async_playwright
+    from playwright_stealth import Stealth
+
     out_dir.mkdir(parents=True, exist_ok=True)
     url = f"https://www.amazon.com/s?k={quote_plus(query)}"
     async with Stealth().use_async(async_playwright()) as p:
