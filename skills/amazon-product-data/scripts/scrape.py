@@ -27,16 +27,15 @@ from pathlib import Path
 # Playwright deps are imported inside main() so `--help` and arg validation
 # don't require the heavy deps to be installed — useful for fast CLI tests.
 
-PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
-ZIP_RE = re.compile(r"^[0-9]{5}$")
-
-# Amazon's "Dogs of Amazon" 503 page returns HTTP 200 with these markers.
-# Detect by content because HTTP status would mislead.
-THROTTLE_MARKERS = (
-    "Sorry! Something went wrong on our end",
-    "/dogsofamazon/",
-    "500_503.png",
+# Shared 503-retry and ZIP-setting helpers live in _lib.py (also at this dir).
+from _lib import (  # noqa: E402
+    THROTTLE_MARKERS,  # re-exported so existing tests can still find the marker  # noqa: F401
+    ZIP_RE,
+    navigate_with_retry,
+    set_delivery_zip,
 )
+
+PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
 
 PRICE_SELECTORS = [
     # Most specific: Amazon's modern "Apex" main-product-price element.
@@ -68,65 +67,6 @@ FRESH_PRICE_SELECTORS = [
 ]
 
 
-async def _navigate_with_retry(page, url: str, max_retries: int = 2) -> None:
-    """Navigate to url, detecting Amazon's throttle/503 page (returns HTTP 200
-    with Dogs-of-Amazon markup). Retries with exponential backoff."""
-    for attempt in range(max_retries + 1):
-        try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
-        except Exception as e:
-            if attempt >= max_retries:
-                raise
-            wait_s = 30 * (2**attempt)
-            print(
-                f"  navigation failed ({e}); backing off {wait_s}s",
-                file=sys.stderr,
-            )
-            await asyncio.sleep(wait_s)
-            continue
-
-        html = await page.content()
-        if any(marker in html for marker in THROTTLE_MARKERS):
-            if attempt >= max_retries:
-                print(
-                    "  Amazon throttle page after max retries; giving up.",
-                    file=sys.stderr,
-                )
-                return
-            wait_s = 30 * (2**attempt)
-            print(
-                f"  Amazon throttle page detected; backing off {wait_s}s",
-                file=sys.stderr,
-            )
-            await asyncio.sleep(wait_s)
-            continue
-        return
-
-
-async def _set_delivery_zip(context, page, zip_code: str) -> bool:
-    """Set Amazon's delivery location to the given ZIP. Returns True on success.
-
-    Uses the address-change endpoint via the location-popover flow because it
-    survives across requests in the same browser context. If any step fails
-    we return False and let the caller decide whether to continue."""
-    try:
-        await _navigate_with_retry(page, "https://www.amazon.com/")
-        await page.wait_for_timeout(1500)
-
-        loc_link = page.locator("#nav-global-location-popover-link")
-        if not await loc_link.count():
-            return False
-        await loc_link.first.click()
-        await page.wait_for_selector("#GLUXZipUpdateInput", timeout=10000)
-        await page.fill("#GLUXZipUpdateInput", zip_code)
-        await page.locator("#GLUXZipUpdate input[type='submit']").first.click()
-        await page.wait_for_timeout(2000)
-        return True
-    except Exception as e:
-        print(f"WARN: failed to set delivery ZIP {zip_code}: {e}", file=sys.stderr)
-        return False
-
-
 async def _detect_fresh(page) -> tuple[bool, float | None]:
     """Return (fresh_available, fresh_price) for the current product page."""
     for sel in FRESH_INDICATORS:
@@ -149,7 +89,7 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
     page = await context.new_page()
     result: dict = {"asin": asin, "url": url}
     try:
-        await _navigate_with_retry(page, url)
+        await navigate_with_retry(page, url)
         try:
             await page.wait_for_selector("#productTitle", timeout=20000)
         except Exception:
@@ -239,7 +179,7 @@ async def main(asins: list[str], out_dir: Path, zip_code: str | None) -> None:
         if zip_code:
             print(f"Setting delivery ZIP to {zip_code}...", file=sys.stderr, flush=True)
             setup_page = await context.new_page()
-            with_fresh = await _set_delivery_zip(context, setup_page, zip_code)
+            with_fresh = await set_delivery_zip(setup_page, zip_code)
             await setup_page.close()
             if with_fresh:
                 print(

@@ -29,8 +29,15 @@ from urllib.parse import quote_plus
 # Playwright deps are imported inside search() so --help / arg validation runs
 # without requiring the heavy deps.
 
+# Shared 503-retry and ZIP-setting helpers live in _lib.py (co-located).
+from _lib import (  # noqa: E402
+    THROTTLE_MARKERS,  # re-exported for tests that grep this file  # noqa: F401
+    ZIP_RE,
+    navigate_with_retry,
+    set_delivery_zip,
+)
+
 ASIN_RE = re.compile(r"^[A-Z0-9]{10}$")
-ZIP_RE = re.compile(r"^[0-9]{5}$")
 PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
 RATING_RE = re.compile(r"([0-9.]+) out of 5")
 # Review counts are integers possibly with thousands commas. Anchored to avoid
@@ -38,13 +45,6 @@ RATING_RE = re.compile(r"([0-9.]+) out of 5")
 REVIEW_COUNT_RE = re.compile(r"^\s*\(?([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\)?\s*$")
 
 WAF_MARKERS = ("AwsWafIntegration", "awsWafCookieDomainList", "challenge-container")
-# Amazon's "Dogs of Amazon" 503 page returns HTTP 200 with these markers. We
-# detect by content because HTTP status would mislead.
-THROTTLE_MARKERS = (
-    "Sorry! Something went wrong on our end",
-    "/dogsofamazon/",
-    "500_503.png",
-)
 
 
 async def parse_card(card) -> dict | None:
@@ -95,67 +95,11 @@ async def parse_card(card) -> dict | None:
     }
 
 
-async def _navigate_with_retry(page, url: str, max_retries: int = 2) -> None:
-    """Navigate to url, detecting Amazon's throttle/503 page (returns HTTP 200
-    with the Dogs-of-Amazon markup). Retries with exponential backoff."""
-    for attempt in range(max_retries + 1):
-        try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
-        except Exception as e:
-            if attempt >= max_retries:
-                raise
-            wait_s = 30 * (2**attempt)
-            print(
-                f"  navigation failed ({e}); backing off {wait_s}s and retrying",
-                file=sys.stderr,
-            )
-            await asyncio.sleep(wait_s)
-            continue
-
-        html = await page.content()
-        if any(marker in html for marker in THROTTLE_MARKERS):
-            if attempt >= max_retries:
-                print(
-                    "  Amazon throttle page after max retries; giving up.",
-                    file=sys.stderr,
-                )
-                return
-            wait_s = 30 * (2**attempt)
-            print(
-                f"  Amazon throttle page detected; backing off {wait_s}s and retrying",
-                file=sys.stderr,
-            )
-            await asyncio.sleep(wait_s)
-            continue
-        return
-
-
-async def _set_delivery_zip(page, zip_code: str) -> bool:
-    """Set Amazon's delivery location for the browser context. Returns True on
-    success. The cookie persists for the rest of the context."""
-    try:
-        await _navigate_with_retry(page, "https://www.amazon.com/")
-        await page.wait_for_timeout(1500)
-
-        loc_link = page.locator("#nav-global-location-popover-link")
-        if not await loc_link.count():
-            return False
-        await loc_link.first.click()
-        await page.wait_for_selector("#GLUXZipUpdateInput", timeout=10000)
-        await page.fill("#GLUXZipUpdateInput", zip_code)
-        await page.locator("#GLUXZipUpdate input[type='submit']").first.click()
-        await page.wait_for_timeout(2000)
-        return True
-    except Exception as e:
-        print(f"WARN: failed to set delivery ZIP {zip_code}: {e}", file=sys.stderr)
-        return False
-
-
 async def _run_one_search(page, label: str, url: str, max_results: int) -> list[dict]:
     """Run a single search against the given URL and return parsed cards."""
     from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
-    await _navigate_with_retry(page, url)
+    await navigate_with_retry(page, url)
 
     results_rendered = True
     try:
@@ -224,7 +168,7 @@ async def search(
 
         if zip_code:
             print(f"Setting delivery ZIP to {zip_code}...", file=sys.stderr, flush=True)
-            ok = await _set_delivery_zip(page, zip_code)
+            ok = await set_delivery_zip(page, zip_code)
             if not ok:
                 print(
                     "  ZIP setup did not complete; Fresh search will be skipped "

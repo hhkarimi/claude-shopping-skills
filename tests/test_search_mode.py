@@ -275,17 +275,24 @@ def test_search_pipeline_error_wraps_subprocess_failures():
 
 
 def test_search_script_has_fresh_and_retry_logic():
-    """The search script must support --zip / --include-fresh and have the
-    throttle-page retry helper."""
-    body = (
-        REPO_ROOT / "skills" / "amazon-product-data" / "scripts" / "search.py"
-    ).read_text(encoding="utf-8")
-    assert "--include-fresh" in body
-    assert "ZIP_RE" in body
-    assert "THROTTLE_MARKERS" in body
-    assert "_navigate_with_retry" in body
-    assert "_set_delivery_zip" in body
-    assert "i=amazonfresh" in body
+    """The search script must support --zip / --include-fresh and use the
+    throttle-page retry helper. The retry/zip helpers themselves live in
+    _lib.py — we check that search.py imports them."""
+    scripts_dir = REPO_ROOT / "skills" / "amazon-product-data" / "scripts"
+    search_body = (scripts_dir / "search.py").read_text(encoding="utf-8")
+    lib_body = (scripts_dir / "_lib.py").read_text(encoding="utf-8")
+
+    assert "--include-fresh" in search_body
+    assert "i=amazonfresh" in search_body
+    # search.py imports the shared helpers and uses them by name.
+    assert "from _lib import" in search_body
+    assert "navigate_with_retry" in search_body
+    assert "set_delivery_zip" in search_body
+    # The helper definitions and shared constants live in _lib.py.
+    assert "navigate_with_retry" in lib_body
+    assert "set_delivery_zip" in lib_body
+    assert "ZIP_RE" in lib_body
+    assert "THROTTLE_MARKERS" in lib_body
 
 
 def test_search_help_documents_fresh_flag():
@@ -317,12 +324,15 @@ def test_search_rejects_include_fresh_without_zip():
 
 
 def test_scrape_script_has_retry_logic():
-    SCRAPE_SCRIPT = (
-        REPO_ROOT / "skills" / "amazon-product-data" / "scripts" / "scrape.py"
-    )
-    body = SCRAPE_SCRIPT.read_text(encoding="utf-8")
-    assert "THROTTLE_MARKERS" in body
-    assert "_navigate_with_retry" in body
+    """scrape.py imports the shared retry helper from _lib."""
+    scripts_dir = REPO_ROOT / "skills" / "amazon-product-data" / "scripts"
+    scrape_body = (scripts_dir / "scrape.py").read_text(encoding="utf-8")
+    lib_body = (scripts_dir / "_lib.py").read_text(encoding="utf-8")
+
+    assert "from _lib import" in scrape_body
+    assert "navigate_with_retry" in scrape_body
+    assert "navigate_with_retry" in lib_body
+    assert "THROTTLE_MARKERS" in lib_body
 
 
 def test_help_mentions_both_modes():
