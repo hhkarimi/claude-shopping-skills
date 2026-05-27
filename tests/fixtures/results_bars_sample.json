@@ -1,0 +1,29 @@
+[
+  {
+    "asin": "B016MEN14O",
+    "url": "https://www.amazon.com/dp/B016MEN14O",
+    "title": "Quest Chocolate Lovers Variety, 12 ct (fixture)",
+    "price_raw": "$24.49",
+    "price": 24.49,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B0FN7MFN37",
+    "url": "https://www.amazon.com/dp/B0FN7MFN37",
+    "title": "BUILT Puff Bar (fixture)",
+    "price_raw": "$29.99",
+    "price": 29.99,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B00GJ82VK4",
+    "url": "https://www.amazon.com/dp/B00GJ82VK4",
+    "title": "Pure Protein, 12 ct (fixture)",
+    "price_raw": "$14.88",
+    "price": 14.88,
+    "html_bytes": 0,
+    "ok": true
+  }
+]

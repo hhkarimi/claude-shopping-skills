@@ -1,0 +1,98 @@
+{
+  "B016MEN14O": {
+    "name": "Quest Nutrition Chocolate Lovers Variety, 12 ct",
+    "type": "whey_milk_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 21,
+    "calories_per_serving": 200,
+    "leucine_per_serving_g": 1.9
+  },
+  "B0FN7MFN37": {
+    "name": "BUILT Puff Bar Chocolate Milkshake, 12 ct",
+    "type": "whey_collagen_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.4
+  },
+  "B00GJ82VK4": {
+    "name": "Pure Protein Chocolate Peanut Butter, 12 ct",
+    "type": "whey_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 190,
+    "leucine_per_serving_g": 1.9
+  },
+  "B0C2GKS8JZ": {
+    "name": "Perfect Bar Variety Pack, Refrigerated, 8 ct",
+    "type": "peanut_butter_honey",
+    "servings_per_container": 8,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 320,
+    "leucine_per_serving_g": 1.4
+  },
+  "B06XG345H8": {
+    "name": "ONE Protein Bar, Best Sellers Variety, 12 ct",
+    "type": "whey_milk_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 220,
+    "leucine_per_serving_g": 1.8
+  },
+  "B018H3LFJG": {
+    "name": "RXBAR Protein Bars, Variety Pack, 12 ct",
+    "type": "egg_whole_food",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 210,
+    "leucine_per_serving_g": 1.0
+  },
+  "B09PYB4MQS": {
+    "name": "Barebells Protein Bars Variety Pack, 12 ct",
+    "type": "milk_protein_whey_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 200,
+    "leucine_per_serving_g": 1.8
+  },
+  "B000FRUMBK": {
+    "name": "Power Crunch Triple Chocolate Wafer Bars, 12 ct",
+    "type": "hydrolyzed_whey",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 13,
+    "calories_per_serving": 220,
+    "leucine_per_serving_g": 1.4
+  },
+  "B00ATPL5PK": {
+    "name": "Premier Protein Nutrition Bar, Chocolate Peanut Butter, 30g, 6 ct",
+    "type": "whey_soy_blend",
+    "servings_per_container": 6,
+    "protein_per_serving_g": 30,
+    "calories_per_serving": 280,
+    "leucine_per_serving_g": 2.7
+  },
+  "B08DCMRQLR": {
+    "name": "Built Bar Double Chocolate, 18 ct",
+    "type": "whey_collagen_blend",
+    "servings_per_container": 18,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 110,
+    "leucine_per_serving_g": 1.4
+  },
+  "B007D6DZ1K": {
+    "name": "CLIF Builders Chocolate, Plant-Based, 12 ct",
+    "type": "soy_rice_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 280,
+    "leucine_per_serving_g": 1.6
+  },
+  "B07Y7H3FHB": {
+    "name": "IQBAR Plant Protein, Chocolate Lovers Variety, 12 ct",
+    "type": "pea_almond_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 180,
+    "leucine_per_serving_g": 1.0
+  }
+}

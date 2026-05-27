@@ -7,5 +7,5 @@ __pycache__/
 results*.json
 *.html
 *.png
-!tests/fixtures/results_sample.json
+!tests/fixtures/*.json
 !docs/**/*.png
