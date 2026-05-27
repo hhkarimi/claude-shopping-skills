@@ -52,3 +52,26 @@ def test_food_to_live_bulk_wins_on_unit_cost():
 def test_output_includes_amazon_purchase_url():
     out = _run_rank()
     assert "[link](https://www.amazon.com/dp/B0094IXKME)" in out
+
+
+def test_cli_sort_by_cal_protein_changes_order():
+    """Sort flag must actually change row order, not just the label.
+
+    Fixture cal_protein values: Seapoint 27oz=9.29, Only Bean=9.09, Food to Live=9.29.
+    By $/g: Food to Live wins. By cal_protein: Only Bean wins."""
+    by_dollar = _run_rank()
+    by_cal = _run_rank(sort="cal_protein")
+
+    def first_row(stdout: str) -> str:
+        for line in stdout.splitlines():
+            if line.startswith("|") and "---" not in line and "Product" not in line:
+                return line
+        raise AssertionError("no data rows in output")
+
+    assert "Sorted by: cal_protein" in by_cal
+    assert "Food to Live" in first_row(by_dollar), (
+        f"expected Food to Live at top of $/g sort, got: {first_row(by_dollar)}"
+    )
+    assert "The Only Bean" in first_row(by_cal), (
+        f"expected The Only Bean at top of cal_protein sort, got: {first_row(by_cal)}"
+    )

@@ -22,6 +22,18 @@ The actual ranking logic lives in `.claude-plugin/lib/ranking.py`; this skill's 
 
 ## How to use
 
+Two modes:
+
+### Search mode (one-command end-to-end)
+
+```bash
+uv run scripts/rank.py --search "whey protein isolate 5 lb" --nutrition references/nutrition_data.json
+```
+
+Searches Amazon, filters results to ASINs in the nutrition database, scrapes live prices, ranks. Search-result ASINs without nutrition data are listed at the end as candidates to add.
+
+### Known-ASIN mode
+
 1. Decide which ASINs to rank. Defaults live in `references/nutrition_data.json` (12 products as of last update). The user may add their own.
 2. Scrape live prices via the `amazon-product-data` skill:
    ```bash

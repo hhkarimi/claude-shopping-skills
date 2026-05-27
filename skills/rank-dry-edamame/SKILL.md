@@ -21,6 +21,18 @@ Rank dry-roasted edamame snacks by the same three criteria as `rank-protein-powd
 
 ## How to use
 
+Two modes:
+
+### Search mode (one-command end-to-end)
+
+```bash
+uv run scripts/rank.py --search "dry roasted edamame bulk" --nutrition references/nutrition_data.json
+```
+
+Searches Amazon, filters results to ASINs in the nutrition database, scrapes live prices, ranks. Search-result ASINs without nutrition data are listed at the end as candidates to add.
+
+### Known-ASIN mode
+
 1. Decide which ASINs to rank. Defaults live in `references/nutrition_data.json` (8 products as of last update, spanning bulk jars, multi-pack bags, and single-serve snack packs).
 2. Scrape live prices via the `amazon-product-data` skill:
    ```bash
