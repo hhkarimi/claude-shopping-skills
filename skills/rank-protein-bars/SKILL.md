@@ -20,7 +20,7 @@ Rank protein bars by the same three criteria as the protein-powder ranker: unit 
 
 ## How to use
 
-1. Decide which ASINs to rank. Defaults live in `references/nutrition_data.json` (4 products as of last update).
+1. Decide which ASINs to rank. Defaults live in `references/nutrition_data.json` (12 products as of last update, spanning whey blends, milk-protein blends, hydrolyzed whey, whey+collagen, plant blends, egg-based whole food, and peanut-butter/honey).
 2. Scrape live prices via the `amazon-product-data` skill:
    ```bash
    uv run ../amazon-product-data/scripts/scrape.py B016MEN14O B0FN7MFN37 ...
