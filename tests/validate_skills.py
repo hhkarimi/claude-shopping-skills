@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate every SKILL.md has required frontmatter keys."""
+
 import re
 import sys
 from pathlib import Path

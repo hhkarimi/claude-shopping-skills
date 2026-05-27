@@ -9,6 +9,7 @@ Usage:
 
 SORT is one of: dollar_per_g_protein (default), cal_protein, leucine_adjusted.
 """
+
 import argparse
 import json
 from pathlib import Path
@@ -51,8 +52,12 @@ def format_table(rows: list[dict]) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--prices", required=True, type=Path, help="Path to scraper results.json.")
-    ap.add_argument("--nutrition", required=True, type=Path, help="Path to nutrition_data.json.")
+    ap.add_argument(
+        "--prices", required=True, type=Path, help="Path to scraper results.json."
+    )
+    ap.add_argument(
+        "--nutrition", required=True, type=Path, help="Path to nutrition_data.json."
+    )
     ap.add_argument(
         "--sort",
         default="dollar_per_g_protein",

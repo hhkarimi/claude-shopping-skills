@@ -17,6 +17,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: Ruff lint
         run: uvx ruff check .
+      - name: Ruff format check
+        run: uvx ruff format --check .
 
   validate:
     runs-on: ubuntu-latest
@@ -29,5 +31,5 @@ jobs:
         run: python3 -c "import json; json.load(open('skills/rank-protein-powders/references/nutrition_data.json'))"
       - name: Validate SKILL.md frontmatter
         run: python3 tests/validate_skills.py
-      - name: Smoke test ranker
-        run: uv run skills/rank-protein-powders/scripts/rank.py --prices tests/fixtures/results_sample.json --nutrition skills/rank-protein-powders/references/nutrition_data.json
+      - name: Pytest
+        run: uvx --with pytest pytest tests -v
