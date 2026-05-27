@@ -1,0 +1,98 @@
+{
+  "B000MAK59O": {
+    "name": "NOW Sports Whey Isolate, unflavored, 10 lb",
+    "type": "whey_isolate",
+    "servings_per_container": 148,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 110,
+    "leucine_per_serving_g": 2.75
+  },
+  "B01HOPJAAE": {
+    "name": "Nutricost Whey Isolate, unflavored, 5 lb",
+    "type": "whey_isolate",
+    "servings_per_container": 65,
+    "protein_per_serving_g": 30,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 3.3
+  },
+  "B00E7IODXQ": {
+    "name": "BulkSupplements Whey Isolate, unflavored, 1 kg",
+    "type": "whey_isolate",
+    "servings_per_container": 33,
+    "protein_per_serving_g": 27,
+    "calories_per_serving": 110,
+    "leucine_per_serving_g": 2.97
+  },
+  "B002TG3QPO": {
+    "name": "Isopure Zero Carb, unflavored, 3 lb",
+    "type": "whey_isolate",
+    "servings_per_container": 47,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 2.75
+  },
+  "B000GISTZ4": {
+    "name": "Optimum Nutrition Gold Standard, Vanilla, 2 lb",
+    "type": "whey_blend",
+    "servings_per_container": 29,
+    "protein_per_serving_g": 24,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 2.5
+  },
+  "B002N6F2UW": {
+    "name": "Dymatize ISO100, Chocolate, 5 lb",
+    "type": "whey_isolate",
+    "servings_per_container": 71,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 2.7
+  },
+  "B0013OSS4M": {
+    "name": "NOW Sports Soy Protein Isolate, unflavored, 2 lb",
+    "type": "soy",
+    "servings_per_container": 32,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.6
+  },
+  "B00NBIUGA2": {
+    "name": "Naked Pea Protein, unflavored, 5 lb",
+    "type": "pea",
+    "servings_per_container": 76,
+    "protein_per_serving_g": 27,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 2.16
+  },
+  "B01COARRFE": {
+    "name": "Anthony's Premium Pea Protein, unflavored, 2 lb",
+    "type": "pea",
+    "servings_per_container": 30,
+    "protein_per_serving_g": 24,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 1.92
+  },
+  "B09G3JYD6L": {
+    "name": "NutraBio Plant Protein, Vanilla Wafer",
+    "type": "pea_rice_blend",
+    "servings_per_container": 18,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 110,
+    "leucine_per_serving_g": 1.6
+  },
+  "B07F42GY33": {
+    "name": "NOW Sports Egg White Protein, unflavored, 5 lb",
+    "type": "egg",
+    "servings_per_container": 134,
+    "protein_per_serving_g": 16,
+    "calories_per_serving": 70,
+    "leucine_per_serving_g": 1.36
+  },
+  "B085B58NB4": {
+    "name": "Orgain Organic Sport 30g Plant Protein, Vanilla, 2.01 lb",
+    "type": "pea_rice_blend",
+    "servings_per_container": 20,
+    "protein_per_serving_g": 30,
+    "calories_per_serving": 150,
+    "leucine_per_serving_g": 2.4
+  }
+}
