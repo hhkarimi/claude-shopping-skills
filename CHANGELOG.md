@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.2.0...v0.3.0) (2026-05-27)
+
+
+### Features
+
+* rank-greek-yogurt skill + Channel column for unified Fresh/Regular ranking ([#11](https://github.com/hhkarimi/claude-shopping-skills/issues/11)) ([552bc71](https://github.com/hhkarimi/claude-shopping-skills/commit/552bc719dd756078d926a56c842a976d42f554a4))
+
 ## [0.2.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.1.0...v0.2.0) (2026-05-27)
 
 
