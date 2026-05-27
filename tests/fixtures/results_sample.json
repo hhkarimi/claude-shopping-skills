@@ -1,0 +1,29 @@
+[
+  {
+    "asin": "B000MAK59O",
+    "url": "https://www.amazon.com/dp/B000MAK59O",
+    "title": "NOW Sports Whey Isolate, 10 lb (fixture)",
+    "price_raw": "$181.99",
+    "price": 181.99,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B00NBIUGA2",
+    "url": "https://www.amazon.com/dp/B00NBIUGA2",
+    "title": "Naked Pea, 5 lb (fixture)",
+    "price_raw": "$57.99",
+    "price": 57.99,
+    "html_bytes": 0,
+    "ok": true
+  },
+  {
+    "asin": "B01COARRFE",
+    "url": "https://www.amazon.com/dp/B01COARRFE",
+    "title": "Anthony's Pea, 2 lb (fixture)",
+    "price_raw": "$23.19",
+    "price": 23.19,
+    "html_bytes": 0,
+    "ok": true
+  }
+]
