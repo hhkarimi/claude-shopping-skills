@@ -97,19 +97,32 @@ def compute_row(
 
 
 def format_table(rows: list[dict]) -> str:
+    """Render ranked rows as a markdown table. Includes a '% vs prev' column
+    showing how much more expensive each row's $/g protein is vs the row
+    above (the previous-ranked product). The top row's delta is rendered
+    as em-dash since there's no prior row to compare against."""
     header = (
         "| Product | Type | Channel | Price | Total protein | $/g protein | "
-        "Cal:protein | Leucine-adj $/g | Buy |\n"
-        "|---|---|:---:|---:|---:|---:|---:|---:|:---:|"
+        "% vs prev | Cal:protein | Leucine-adj $/g | Buy |\n"
+        "|---|---|:---:|---:|---:|---:|---:|---:|---:|:---:|"
     )
     lines = [header]
+    prev_dollar_per_g: float | None = None
     for r in rows:
         url = r.get("url") or amazon_url(r["asin"])
         channel = r.get("channel") or "regular"
+        cur = r["dollar_per_g_protein"]
+        if prev_dollar_per_g is None or prev_dollar_per_g == 0:
+            delta_str = "—"
+        else:
+            delta_pct = (cur - prev_dollar_per_g) / prev_dollar_per_g * 100
+            sign = "+" if delta_pct >= 0 else ""
+            delta_str = f"{sign}{delta_pct:.1f}%"
+        prev_dollar_per_g = cur
         lines.append(
             f"| {r['name']} | {r['type']} | {channel} | ${r['price']:.2f} | "
             f"{r['total_protein_g']:,} g | ${r['dollar_per_g_protein']:.4f} | "
-            f"{r['cal_protein']:.2f} | ${r['leucine_adjusted']:.4f} | "
+            f"{delta_str} | {r['cal_protein']:.2f} | ${r['leucine_adjusted']:.4f} | "
             f"[link]({url}) |"
         )
     return "\n".join(lines)

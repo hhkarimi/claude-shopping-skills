@@ -144,11 +144,49 @@ def test_format_table_includes_header_and_rows_and_url():
     out = format_table(rows)
     assert "| Product |" in out
     assert "| Channel |" in out
+    assert "| % vs prev |" in out
     assert "| Buy |" in out
     assert "| A |" in out
     assert "| regular |" in out
     assert "$0.0500" in out
+    # First (and only) row has no previous row to compare against → em-dash.
+    assert "| — |" in out
     assert "[link](https://www.amazon.com/dp/B000A1B2C3)" in out
+
+
+def test_format_table_renders_pct_delta_between_adjacent_rows():
+    """Second-row delta is computed against first row's $/g, etc."""
+    rows = [
+        {
+            "asin": "B0CHEAP001",
+            "name": "Cheaper",
+            "type": "whey",
+            "channel": "regular",
+            "price": 10.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.10,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.10,
+            "url": "https://www.amazon.com/dp/B0CHEAP001",
+        },
+        {
+            "asin": "B0DEAR0001",
+            "name": "Dearer",
+            "type": "whey",
+            "channel": "regular",
+            "price": 12.0,
+            "total_protein_g": 100,
+            "dollar_per_g_protein": 0.12,
+            "cal_protein": 4.0,
+            "leucine_adjusted": 0.12,
+            "url": "https://www.amazon.com/dp/B0DEAR0001",
+        },
+    ]
+    out = format_table(rows)
+    # Second row should be +20% more expensive per gram than first row.
+    assert "+20.0%" in out
+    # First row should still be em-dash.
+    assert "| — |" in out
 
 
 def test_compute_row_channel_from_fresh_available_true():
