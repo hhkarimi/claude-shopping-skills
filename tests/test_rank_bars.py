@@ -71,18 +71,7 @@ def test_cli_sort_by_cal_protein_changes_order():
     )
 
 
-def test_bars_and_powders_rank_scripts_share_logic():
-    """Sanity check: the two ranker scripts are byte-identical except for the docstring."""
-    powders = (
-        REPO_ROOT / "skills" / "rank-protein-powders" / "scripts" / "rank.py"
-    ).read_text()
-    bars = RANK_SCRIPT.read_text()
-
-    # Strip everything before the first `import argparse` line — drops the
-    # docstring on both sides.
-    powders_body = powders[powders.index("import argparse") :]
-    bars_body = bars[bars.index("import argparse") :]
-    assert powders_body == bars_body, (
-        "rank.py for bars and powders have diverged below their docstrings. "
-        "Either re-sync them, or extract the shared logic to a module."
-    )
+def test_output_includes_amazon_purchase_url():
+    """The bars ranker must surface a clickable Amazon URL per row."""
+    out = _run_rank()
+    assert "[link](https://www.amazon.com/dp/B016MEN14O)" in out  # Quest

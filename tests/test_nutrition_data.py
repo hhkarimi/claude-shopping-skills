@@ -6,15 +6,11 @@ from pathlib import Path
 
 import pytest
 
+# Single source of truth — same constant the ranker uses.
+from ranking import REQUIRED_NUTRITION_KEYS
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-REQUIRED_KEYS = {
-    "name",
-    "type",
-    "servings_per_container",
-    "protein_per_serving_g",
-    "calories_per_serving",
-    "leucine_per_serving_g",
-}
+REQUIRED_KEYS = set(REQUIRED_NUTRITION_KEYS)
 POSITIVE_NUMERIC_KEYS = (
     "servings_per_container",
     "protein_per_serving_g",
@@ -31,7 +27,7 @@ NUTRITION_FILES = sorted(
     "path", NUTRITION_FILES, ids=lambda p: str(p.relative_to(REPO_ROOT))
 )
 def test_nutrition_data_schema(path: Path):
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
     assert data, f"{path}: empty"
     for asin, entry in data.items():
         # ASIN format
