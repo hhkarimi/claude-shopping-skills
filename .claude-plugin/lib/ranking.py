@@ -12,8 +12,10 @@ Two modes:
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 WHEY_ISOLATE_LEUCINE_FRACTION = 0.11
@@ -126,29 +128,46 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
 
 
 def print_report(result: dict, unknown_search_hits: list[dict] | None = None) -> None:
-    print(format_table(result["rows"]))
-    print()
+    """Print the rank report. Table + sort/count go to stdout (the data);
+    every Skipped/Found-but-unknown diagnostic goes to stderr so consumers
+    can pipe stdout to a file and get a clean markdown table."""
+    rows = result["rows"]
+    if rows:
+        print(format_table(rows))
+        print()
     print(f"Sorted by: {result['sort']}")
-    print(f"Ranked: {len(result['rows'])} products")
+    print(f"Ranked: {len(rows)} products")
+
     if result["missing_price"]:
-        print(f"Skipped (no live price): {', '.join(result['missing_price'])}")
+        print(
+            f"Skipped (no live price): {', '.join(result['missing_price'])}",
+            file=sys.stderr,
+        )
     if result["missing_nut"]:
         print(
             f"Skipped (no nutrition data, add to nutrition_data.json): "
-            f"{', '.join(result['missing_nut'])}"
+            f"{', '.join(result['missing_nut'])}",
+            file=sys.stderr,
         )
     if result["invalid_nut"]:
-        print(f"Skipped (invalid nutrition data): {'; '.join(result['invalid_nut'])}")
+        print(
+            f"Skipped (invalid nutrition data): {'; '.join(result['invalid_nut'])}",
+            file=sys.stderr,
+        )
     if result["malformed"]:
-        print(f"Skipped (malformed price entries): {'; '.join(result['malformed'])}")
+        print(
+            f"Skipped (malformed price entries): {'; '.join(result['malformed'])}",
+            file=sys.stderr,
+        )
     if unknown_search_hits:
         print(
             "\nFound in search but no nutrition data — "
-            "add to nutrition_data.json to include in future rankings:"
+            "add to nutrition_data.json to include in future rankings:",
+            file=sys.stderr,
         )
         for hit in unknown_search_hits[:10]:
             title = (hit.get("title") or "")[:70]
-            print(f"  {hit['asin']}  {title}")
+            print(f"  {hit['asin']}  {title}", file=sys.stderr)
 
 
 def filter_search_results(
@@ -184,6 +203,15 @@ class SearchPipelineError(RuntimeError):
 SEARCH_TIMEOUT_S = 180
 SCRAPE_PER_ASIN_S = 30
 SCRAPE_BASE_TIMEOUT_S = 60
+
+
+def _check_uv_available() -> None:
+    """Fail fast with a clear message if `uv` isn't on PATH."""
+    if shutil.which("uv") is None:
+        raise SearchPipelineError(
+            "uv not found on PATH. Install it via `brew install uv` "
+            "(or see https://docs.astral.sh/uv/) and re-run."
+        )
 
 
 def _run_subprocess(
@@ -279,13 +307,18 @@ def run_cli(description: str) -> None:
         "--max-results",
         type=int,
         default=20,
-        help="With --search: cap how many search results to consider (default 20).",
+        help="With --search: cap how many of the FIRST PAGE of Amazon search "
+        "results to consider (default 20). Amazon's first page returns up to "
+        "~48 cards; pagination is not yet supported, so values above ~48 "
+        "have no further effect.",
     )
     ap.add_argument(
         "--out",
         type=Path,
-        default=Path("/tmp/amzn"),
-        help="Working directory for search/scrape artifacts (default /tmp/amzn).",
+        default=Path(tempfile.gettempdir()) / "amzn",
+        help="Working directory for search/scrape artifacts "
+        "(default: <system temp>/amzn). Artifacts accumulate over runs — "
+        "clean periodically.",
     )
     args = ap.parse_args()
 
@@ -300,6 +333,7 @@ def run_cli(description: str) -> None:
     unknown_hits: list[dict] = []
     try:
         if args.search is not None:
+            _check_uv_available()
             print(f"Searching Amazon for: {args.search!r}", file=sys.stderr, flush=True)
             search_results = _run_search(args.search, args.max_results, args.out)
             known, unknown_hits = filter_search_results(search_results, nutrition)
@@ -337,3 +371,6 @@ def run_cli(description: str) -> None:
 
     result = rank(prices, nutrition, args.sort)
     print_report(result, unknown_search_hits=unknown_hits)
+
+    if args.search is not None:
+        print(f"\nArtifacts in {args.out}", file=sys.stderr)

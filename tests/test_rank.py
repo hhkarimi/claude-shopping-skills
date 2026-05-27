@@ -100,9 +100,10 @@ def test_cli_handles_invalid_nutrition(tmp_path: Path):
         text=True,
         check=True,
     )
+    # Table + Ranked summary on stdout; Skipped diagnostics on stderr.
     assert "Ranked: 0 products" in result.stdout
-    assert "invalid nutrition data" in result.stdout
-    assert "B000BADXXX" in result.stdout
+    assert "invalid nutrition data" in result.stderr
+    assert "B000BADXXX" in result.stderr
 
 
 def test_compute_row_leucine_penalty_for_pea():
@@ -208,8 +209,8 @@ def test_cli_handles_missing_nutrition(tmp_path: Path):
         check=True,
     )
     assert "Ranked: 1 products" in result.stdout
-    assert "B0UNKNOWN1" in result.stdout
-    assert "no nutrition data" in result.stdout
+    assert "B0UNKNOWN1" in result.stderr
+    assert "no nutrition data" in result.stderr
 
 
 def test_cli_skips_null_prices(tmp_path: Path):
@@ -236,7 +237,7 @@ def test_cli_skips_null_prices(tmp_path: Path):
         check=True,
     )
     assert "Ranked: 0 products" in result.stdout
-    assert "no live price" in result.stdout
+    assert "no live price" in result.stderr
 
 
 def test_cli_handles_malformed_entries(tmp_path: Path):
@@ -264,4 +265,4 @@ def test_cli_handles_malformed_entries(tmp_path: Path):
         check=True,
     )
     assert "Ranked: 1 products" in result.stdout
-    assert "malformed price entries" in result.stdout
+    assert "malformed price entries" in result.stderr

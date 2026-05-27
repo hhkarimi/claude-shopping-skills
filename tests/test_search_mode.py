@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 
 from ranking import filter_search_results
 
@@ -106,6 +107,83 @@ def test_cli_rejects_both_prices_and_search(tmp_path: Path):
         "not allowed with" in result.stderr.lower()
         or "argument" in result.stderr.lower()
     )
+
+
+def test_print_report_skips_empty_table_header(capsys):
+    """Empty result set must not print a bare table header — it's confusing
+    for users piping stdout to a file expecting a parsable markdown table."""
+    from ranking import print_report
+
+    print_report(
+        {
+            "rows": [],
+            "missing_price": [],
+            "missing_nut": [],
+            "invalid_nut": [],
+            "malformed": [],
+            "sort": "dollar_per_g_protein",
+        }
+    )
+    captured = capsys.readouterr()
+    assert "| Product |" not in captured.out
+    assert "| Buy |" not in captured.out
+    # The sort + count summary should still print.
+    assert "Sorted by: dollar_per_g_protein" in captured.out
+    assert "Ranked: 0 products" in captured.out
+
+
+def test_print_report_renders_table_when_rows_present(capsys):
+    from ranking import print_report
+
+    print_report(
+        {
+            "rows": [
+                {
+                    "asin": "B0ABCDEFGH",
+                    "name": "X",
+                    "type": "whey_isolate",
+                    "price": 50.0,
+                    "total_protein_g": 1000,
+                    "dollar_per_g_protein": 0.05,
+                    "cal_protein": 4.4,
+                    "leucine_adjusted": 0.05,
+                    "url": "https://www.amazon.com/dp/B0ABCDEFGH",
+                }
+            ],
+            "missing_price": [],
+            "missing_nut": [],
+            "invalid_nut": [],
+            "malformed": [],
+            "sort": "dollar_per_g_protein",
+        }
+    )
+    captured = capsys.readouterr()
+    assert "| Product |" in captured.out
+    assert "| X |" in captured.out
+
+
+def test_uv_pre_flight_check_fails_clearly(monkeypatch):
+    """When `uv` isn't on PATH, the orchestrator must raise SearchPipelineError
+    with an install hint — not let subprocess.run die with FileNotFoundError."""
+    import ranking
+
+    monkeypatch.setattr(ranking.shutil, "which", lambda _: None)
+    with pytest.raises(ranking.SearchPipelineError, match="uv not found"):
+        ranking._check_uv_available()
+
+
+def test_default_out_dir_uses_system_temp():
+    """--out default must be platform-portable (no hardcoded /tmp)."""
+    result = subprocess.run(
+        [sys.executable, str(POWDERS_RANK), "--help"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    # The help text should reference a system temp path, not a hardcoded /tmp.
+    import tempfile
+
+    assert tempfile.gettempdir() in result.stdout or "system temp" in result.stdout
 
 
 def test_cli_rejects_empty_search():
