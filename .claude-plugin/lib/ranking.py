@@ -1,7 +1,7 @@
 """Shared ranking logic for protein-product comparison skills.
 
 Used by every `skills/rank-*/scripts/rank.py`. Each skill's wrapper script
-calls `run_cli` with a one-line description; the actual math, CLI parsing,
+calls `run_cli` with a description string; the actual math, CLI parsing,
 and output formatting live here.
 """
 
@@ -66,11 +66,12 @@ def format_table(rows: list[dict]) -> str:
     )
     lines = [header]
     for r in rows:
+        url = r.get("url") or amazon_url(r["asin"])
         lines.append(
             f"| {r['name']} | {r['type']} | ${r['price']:.2f} | "
             f"{r['total_protein_g']:,} g | ${r['dollar_per_g_protein']:.4f} | "
             f"{r['cal_protein']:.2f} | ${r['leucine_adjusted']:.4f} | "
-            f"[link]({r['url']}) |"
+            f"[link]({url}) |"
         )
     return "\n".join(lines)
 
@@ -81,8 +82,12 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
     missing_nut: list[str] = []
     missing_price: list[str] = []
     invalid_nut: list[str] = []
+    malformed: list[str] = []
     for entry in prices:
-        asin = entry["asin"]
+        asin = entry.get("asin")
+        if not asin:
+            malformed.append(repr(entry)[:80])
+            continue
         price = entry.get("price")
         if price is None:
             missing_price.append(asin)
@@ -102,6 +107,7 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
         "missing_price": missing_price,
         "missing_nut": missing_nut,
         "invalid_nut": invalid_nut,
+        "malformed": malformed,
         "sort": sort,
     }
 
@@ -112,14 +118,16 @@ def print_report(result: dict) -> None:
     print(f"Sorted by: {result['sort']}")
     print(f"Ranked: {len(result['rows'])} products")
     if result["missing_price"]:
-        print(f"\nSkipped (no live price): {', '.join(result['missing_price'])}")
+        print(f"Skipped (no live price): {', '.join(result['missing_price'])}")
     if result["missing_nut"]:
         print(
-            f"\nSkipped (no nutrition data, add to nutrition_data.json): "
+            f"Skipped (no nutrition data, add to nutrition_data.json): "
             f"{', '.join(result['missing_nut'])}"
         )
     if result["invalid_nut"]:
-        print(f"\nSkipped (invalid nutrition data): {'; '.join(result['invalid_nut'])}")
+        print(f"Skipped (invalid nutrition data): {'; '.join(result['invalid_nut'])}")
+    if result["malformed"]:
+        print(f"Skipped (malformed price entries): {'; '.join(result['malformed'])}")
 
 
 def run_cli(description: str) -> None:
@@ -134,7 +142,8 @@ def run_cli(description: str) -> None:
     ap.add_argument("--sort", default="dollar_per_g_protein", choices=SORT_CHOICES)
     args = ap.parse_args()
 
-    prices = json.loads(args.prices.read_text())
-    nutrition = json.loads(args.nutrition.read_text())
+    # utf-8-sig handles both plain UTF-8 and files with a leading BOM.
+    prices = json.loads(args.prices.read_text(encoding="utf-8-sig"))
+    nutrition = json.loads(args.nutrition.read_text(encoding="utf-8-sig"))
     result = rank(prices, nutrition, args.sort)
     print_report(result)

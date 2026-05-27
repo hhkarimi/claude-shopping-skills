@@ -68,4 +68,4 @@ Same heuristic as `rank-protein-powders`: `leucine_adjusted = dollar_per_g_prote
 
 ## Shared ranker implementation
 
-The actual ranking logic lives in `lib/ranking.py` at the repo root. The `scripts/rank.py` in this skill is a thin wrapper that calls into it. The same shared module backs `rank-protein-powders`. To add a new comparison domain, copy this skill's wrapper pattern and provide a new `nutrition_data.json`.
+The actual ranking logic lives in `.claude-plugin/lib/ranking.py`. The `scripts/rank.py` in this skill is a thin wrapper that calls into it. The same shared module backs `rank-protein-powders`. To add a new comparison domain, copy this skill's wrapper pattern and provide a new `nutrition_data.json`.

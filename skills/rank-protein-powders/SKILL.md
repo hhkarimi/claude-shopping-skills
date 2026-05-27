@@ -7,7 +7,7 @@ description: Rank protein powders by $/g protein and calorie:protein ratio, with
 
 Rank protein powders by economic + nutritional efficiency. Combines live Amazon pricing with curated nutrition data to produce a ranked comparison table including a clickable Amazon purchase URL per product.
 
-The actual ranking logic lives in `lib/ranking.py` at the repo root; this skill's `scripts/rank.py` is a thin wrapper that points the shared logic at this skill's nutrition database.
+The actual ranking logic lives in `.claude-plugin/lib/ranking.py`; this skill's `scripts/rank.py` is a thin wrapper that points the shared logic at this skill's nutrition database.
 
 ## When to use
 

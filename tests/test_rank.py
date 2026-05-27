@@ -237,3 +237,31 @@ def test_cli_skips_null_prices(tmp_path: Path):
     )
     assert "Ranked: 0 products" in result.stdout
     assert "no live price" in result.stdout
+
+
+def test_cli_handles_malformed_entries(tmp_path: Path):
+    """Price entries missing the asin field are reported, not crashed."""
+    fake_prices = tmp_path / "prices.json"
+    fake_prices.write_text(
+        json.dumps(
+            [
+                {"price": 10.0, "ok": True},  # missing asin
+                {"asin": "B000MAK59O", "price": 181.99, "ok": True},
+            ]
+        )
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RANK_SCRIPT),
+            "--prices",
+            str(fake_prices),
+            "--nutrition",
+            str(NUTRITION),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "Ranked: 1 products" in result.stdout
+    assert "malformed price entries" in result.stdout
