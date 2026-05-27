@@ -24,7 +24,7 @@ PR titles become the squash-merge commit message, so prefix your PR title with t
 
 ### Add a product to a `rank-*` skill
 
-Each ranking skill (e.g. `rank-protein-powders`, `rank-protein-bars`, `rank-dry-edamame`) ships with a curated `references/nutrition_data.json`. To add a product:
+Each ranking skill (e.g. `rank-protein-powders`, `rank-protein-bars`, `rank-dry-edamame`, `rank-greek-yogurt`) ships with a curated `references/nutrition_data.json`. To add a product:
 
 1. Find the Amazon ASIN (the 10-character ID in the product URL).
 2. Read the manufacturer's nutrition label.
@@ -33,6 +33,7 @@ Each ranking skill (e.g. `rank-protein-powders`, `rank-protein-bars`, `rank-dry-
    "B0XXXXXXXX": {
      "name": "Brand X Product, Variant, Size",
      "type": "<see SKILL.md for valid values>",
+     "channel": "regular",
      "servings_per_container": 12,
      "protein_per_serving_g": 25,
      "calories_per_serving": 200,
@@ -42,6 +43,21 @@ Each ranking skill (e.g. `rank-protein-powders`, `rank-protein-bars`, `rank-dry-
 4. If leucine isn't on the label, use the per-type heuristic in the skill's `SKILL.md`.
 5. Run the ranker locally (see below) to confirm the row appears.
 
+#### Optional `channel` field
+
+`channel` is `"regular"` or `"fresh"`. It seeds the default Channel column when search-mode can't determine it at runtime (e.g. `--prices` mode without `--search`). The runtime `fresh_available` value from scrape.py overrides this default if it's set. Most entries should be `"regular"`; use `"fresh"` only for products whose Amazon listing is sold by AmazonFresh (e.g. a 10-pack of the same bar that the regular 12-pack ASIN doesn't carry).
+
+#### Cross-channel pairs
+
+Amazon Fresh sometimes lists the same brand under a different ASIN than regular Amazon — often a different pack size. To compare both side-by-side in the ranking, add **both** ASINs as separate entries, each tagged with its `channel`. Example from `rank-protein-bars`:
+
+```json
+"B0B17P5N3D": { "name": "think! Brownie Crunch, 12 ct", "channel": "regular", ... },
+"B000CRIBCA": { "name": "think! Brownie Crunch, 10 ct (Amazon Fresh)", "channel": "fresh", ... }
+```
+
+The ranker treats them as distinct products and surfaces them both in the table at their respective prices — letting the user pick by per-gram cost vs convenience.
+
 ### Fix the Amazon scraper
 
 Amazon changes its DOM occasionally. If `search.py` or `scrape.py` returns nulls or empty results:
@@ -50,9 +66,11 @@ Amazon changes its DOM occasionally. If `search.py` or `scrape.py` returns nulls
 2. Update the selector lists in `skills/amazon-product-data/scripts/{search,scrape}.py`.
 3. Test locally against 2–3 ASINs.
 
+The 503-retry and ZIP-setting helpers are shared between both scripts in `skills/amazon-product-data/scripts/_lib.py` — edit there if you're touching retry/throttle behavior, not in the individual scripts.
+
 ### Add a new comparison domain
 
-The pattern: each rank-* skill is just a `SKILL.md`, a `nutrition_data.json`, and a thin `rank.py` wrapper. The actual ranking math lives in `.claude-plugin/lib/ranking.py` and is shared across all domains. To add a new domain, copy the structure of an existing rank-* skill and replace its data.
+The pattern: each rank-* skill is just a `SKILL.md`, a `nutrition_data.json`, and a thin `rank.py` wrapper. The actual ranking math lives in `.claude-plugin/lib/ranking.py` and is shared across all domains. To add a new domain, copy the structure of an existing rank-* skill (e.g. `rank-greek-yogurt` is the most recent template) and replace its data.
 
 ## Local dev
 
