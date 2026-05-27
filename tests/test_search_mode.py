@@ -108,6 +108,94 @@ def test_cli_rejects_both_prices_and_search(tmp_path: Path):
     )
 
 
+def test_cli_rejects_empty_search():
+    """--search '' is a programmer/typo error; argparse accepts it but we
+    must reject it before falling through to a None.read_text crash."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(POWDERS_RANK),
+            "--search",
+            "",
+            "--nutrition",
+            str(POWDERS_NUTRITION),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "non-empty" in result.stderr.lower()
+    assert "attributeerror" not in result.stderr.lower()
+    assert "traceback" not in result.stderr.lower()
+
+
+def test_cli_rejects_whitespace_only_search():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(POWDERS_RANK),
+            "--search",
+            "   ",
+            "--nutrition",
+            str(POWDERS_NUTRITION),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "non-empty" in result.stderr.lower()
+
+
+def test_search_pipeline_error_wraps_subprocess_failures():
+    """A search.py / scrape.py failure surfaces as a clean SearchPipelineError,
+    not a raw CalledProcessError traceback."""
+    import subprocess as sp
+
+    from ranking import SearchPipelineError, _run_subprocess
+
+    try:
+        _run_subprocess(
+            [sys.executable, "-c", "import sys; sys.exit(2)"],
+            description="fake search",
+            timeout=5,
+            artifact_dir=Path("/tmp/amzn"),
+        )
+    except SearchPipelineError as e:
+        msg = str(e)
+        assert "fake search" in msg
+        assert "exit code 2" in msg
+        assert "WAF" in msg  # exit-2 hint
+    else:
+        raise AssertionError("expected SearchPipelineError on exit 2")
+
+    try:
+        _run_subprocess(
+            ["/nonexistent/binary-that-does-not-exist-xyz"],
+            description="fake search",
+            timeout=5,
+            artifact_dir=Path("/tmp/amzn"),
+        )
+    except SearchPipelineError as e:
+        assert "PATH" in str(e) or "not found" in str(e).lower()
+    else:
+        raise AssertionError("expected SearchPipelineError on missing binary")
+
+    try:
+        _run_subprocess(
+            [sys.executable, "-c", "import time; time.sleep(10)"],
+            description="fake search",
+            timeout=1,
+            artifact_dir=Path("/tmp/amzn"),
+        )
+    except SearchPipelineError as e:
+        assert "timeout" in str(e).lower()
+    else:
+        raise AssertionError("expected SearchPipelineError on timeout")
+
+    # Avoid unused-import warning for the imported `sp` module above.
+    _ = sp
+
+
 def test_help_mentions_both_modes():
     """--help text should describe both --prices and --search modes."""
     result = subprocess.run(

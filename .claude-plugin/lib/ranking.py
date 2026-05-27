@@ -173,10 +173,52 @@ def filter_search_results(
     return known, unknown
 
 
+class SearchPipelineError(RuntimeError):
+    """Raised when the search.py or scrape.py subprocess fails or times out.
+
+    Wraps the underlying subprocess error with context the user can act on
+    (artifact path, WAF hint, install hint) so they never see a raw traceback."""
+
+
+# Per-subprocess defaults. Search hits one URL; scrape hits N.
+SEARCH_TIMEOUT_S = 180
+SCRAPE_PER_ASIN_S = 30
+SCRAPE_BASE_TIMEOUT_S = 60
+
+
+def _run_subprocess(
+    args: list[str], *, description: str, timeout: int, artifact_dir: Path
+) -> None:
+    """Run a subprocess.run with friendly error wrapping."""
+    try:
+        subprocess.run(args, check=True, timeout=timeout)
+    except FileNotFoundError as e:
+        raise SearchPipelineError(
+            f"{description} failed: required binary not found ({e.filename!r}). "
+            f"Install uv (https://docs.astral.sh/uv/) and ensure it's on PATH."
+        ) from e
+    except subprocess.TimeoutExpired as e:
+        raise SearchPipelineError(
+            f"{description} exceeded {timeout}s timeout. "
+            f"Amazon may be slow or blocking; check artifacts in {artifact_dir}."
+        ) from e
+    except subprocess.CalledProcessError as e:
+        hint = ""
+        if e.returncode == 2:
+            hint = (
+                " (exit 2 from search.py indicates an AWS WAF bot challenge — "
+                "inspect search.html in the artifact dir)"
+            )
+        raise SearchPipelineError(
+            f"{description} failed with exit code {e.returncode}.{hint} "
+            f"Artifacts in {artifact_dir}."
+        ) from e
+
+
 def _run_search(query: str, max_results: int, out_dir: Path) -> list[dict]:
     """Shell out to search.py and parse its JSON output."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
+    _run_subprocess(
         [
             "uv",
             "run",
@@ -187,7 +229,9 @@ def _run_search(query: str, max_results: int, out_dir: Path) -> list[dict]:
             "--out",
             str(out_dir),
         ],
-        check=True,
+        description="Amazon search",
+        timeout=SEARCH_TIMEOUT_S,
+        artifact_dir=out_dir,
     )
     return json.loads((out_dir / "search_results.json").read_text(encoding="utf-8-sig"))
 
@@ -195,7 +239,8 @@ def _run_search(query: str, max_results: int, out_dir: Path) -> list[dict]:
 def _run_scrape(asins: list[str], out_dir: Path) -> list[dict]:
     """Shell out to scrape.py and parse its JSON output."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
+    timeout = SCRAPE_BASE_TIMEOUT_S + SCRAPE_PER_ASIN_S * len(asins)
+    _run_subprocess(
         [
             "uv",
             "run",
@@ -204,7 +249,9 @@ def _run_scrape(asins: list[str], out_dir: Path) -> list[dict]:
             "--out",
             str(out_dir),
         ],
-        check=True,
+        description=f"Amazon scrape of {len(asins)} ASINs",
+        timeout=timeout,
+        artifact_dir=out_dir,
     )
     return json.loads((out_dir / "results.json").read_text(encoding="utf-8-sig"))
 
@@ -242,41 +289,51 @@ def run_cli(description: str) -> None:
     )
     args = ap.parse_args()
 
+    # Distinguish "not passed" (None) from "passed empty" (""). argparse's
+    # mutually_exclusive_group accepts --search "" as satisfying the group,
+    # so we must check explicitly rather than relying on truthiness.
+    if args.search is not None and not args.search.strip():
+        ap.error("--search requires a non-empty query")
+
     nutrition = json.loads(args.nutrition.read_text(encoding="utf-8-sig"))
 
     unknown_hits: list[dict] = []
-    if args.search:
-        print(f"Searching Amazon for: {args.search!r}", file=sys.stderr, flush=True)
-        search_results = _run_search(args.search, args.max_results, args.out)
-        known, unknown_hits = filter_search_results(search_results, nutrition)
-        if not known:
+    try:
+        if args.search is not None:
+            print(f"Searching Amazon for: {args.search!r}", file=sys.stderr, flush=True)
+            search_results = _run_search(args.search, args.max_results, args.out)
+            known, unknown_hits = filter_search_results(search_results, nutrition)
+            if not known:
+                print(
+                    f"No matches between {len(search_results)} search results and the "
+                    f"nutrition database ({len(nutrition)} products).",
+                    file=sys.stderr,
+                )
+                print_report(
+                    {
+                        "rows": [],
+                        "missing_price": [],
+                        "missing_nut": [],
+                        "invalid_nut": [],
+                        "malformed": [],
+                        "sort": args.sort,
+                    },
+                    unknown_search_hits=unknown_hits,
+                )
+                return
             print(
-                f"No matches between {len(search_results)} search results and the "
-                f"nutrition database ({len(nutrition)} products).",
+                f"Found {len(known)} known + {len(unknown_hits)} unknown ASINs. "
+                f"Scraping prices for the {len(known)} known...",
                 file=sys.stderr,
+                flush=True,
             )
-            print_report(
-                {
-                    "rows": [],
-                    "missing_price": [],
-                    "missing_nut": [],
-                    "invalid_nut": [],
-                    "malformed": [],
-                    "sort": args.sort,
-                },
-                unknown_search_hits=unknown_hits,
-            )
-            return
-        print(
-            f"Found {len(known)} known + {len(unknown_hits)} unknown ASINs. "
-            f"Scraping prices for the {len(known)} known...",
-            file=sys.stderr,
-            flush=True,
-        )
-        asins = [r["asin"] for r in known]
-        prices = _run_scrape(asins, args.out)
-    else:
-        prices = json.loads(args.prices.read_text(encoding="utf-8-sig"))
+            asins = [r["asin"] for r in known]
+            prices = _run_scrape(asins, args.out)
+        else:
+            prices = json.loads(args.prices.read_text(encoding="utf-8-sig"))
+    except SearchPipelineError as e:
+        print(f"\nError: {e}", file=sys.stderr)
+        sys.exit(1)
 
     result = rank(prices, nutrition, args.sort)
     print_report(result, unknown_search_hits=unknown_hits)
