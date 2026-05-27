@@ -47,19 +47,38 @@ uv run scripts/search.py "pea protein 5 lb" --max-results 10
 ### Scrape (for known ASINs)
 
 ```bash
-uv run scripts/scrape.py <ASIN1> <ASIN2> ... [--out /path/to/dir]
+uv run scripts/scrape.py <ASIN1> <ASIN2> ... [--out /path/to/dir] [--zip <code>]
 ```
 
 Each ASIN is a 10-character Amazon product identifier (e.g. `B000MAK59O`).
 
 Writes:
-- `results.json` — list of `{asin, url, title, price_raw, price, html_bytes, ok}` objects
+- `results.json` — list of `{asin, url, title, price_raw, price, fresh_available, fresh_price, html_bytes, ok}` objects
 - `<asin>.png` — viewport screenshot per product
 - `<asin>.html` — full rendered HTML per product
 
 Example:
 ```bash
 uv run scripts/scrape.py B000MAK59O B01HOPJAAE B002TG3QPO
+```
+
+#### Amazon Fresh availability (`--zip`)
+
+When you pass `--zip <5-digit ZIP>`, the scraper sets the Amazon delivery
+location at the start of the session and checks every product page for an
+Amazon Fresh badge. Results gain:
+
+- `fresh_available: bool` — whether the product is purchasable on Amazon Fresh
+  at that ZIP
+- `fresh_price: float | null` — the Fresh-specific price if it differs from
+  the regular price
+
+Without `--zip`, both fields are always `false`/`null`. Amazon Fresh is
+geographically limited; a ZIP outside any Fresh delivery zone will return
+`fresh_available: false` for every product.
+
+```bash
+uv run scripts/scrape.py B016MEN14O B0FN7MFN37 --zip 02139
 ```
 
 ### Typical pipeline

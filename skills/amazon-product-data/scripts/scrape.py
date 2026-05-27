@@ -8,7 +8,13 @@
 """Scrape Amazon product data (title, price, HTML, screenshot) for given ASINs.
 
 Usage:
-    uv run scrape.py <ASIN1> <ASIN2> ... [--out /path/to/dir]
+    uv run scrape.py <ASIN1> <ASIN2> ... [--out /path/to/dir] [--zip <code>]
+
+When --zip is provided, the scraper sets the Amazon delivery location to that
+ZIP code at the start of the session and annotates each product with
+`fresh_available` and `fresh_price`. Fresh availability is region-gated, so
+products outside a Fresh delivery area will always come back as
+`fresh_available: false` regardless of the ASIN.
 """
 
 import argparse
@@ -18,10 +24,19 @@ import re
 import sys
 from pathlib import Path
 
-from playwright.async_api import async_playwright
-from playwright_stealth import Stealth
+# Playwright deps are imported inside main() so `--help` and arg validation
+# don't require the heavy deps to be installed — useful for fast CLI tests.
 
 PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
+ZIP_RE = re.compile(r"^[0-9]{5}$")
+
+# Amazon's "Dogs of Amazon" 503 page returns HTTP 200 with these markers.
+# Detect by content because HTTP status would mislead.
+THROTTLE_MARKERS = (
+    "Sorry! Something went wrong on our end",
+    "/dogsofamazon/",
+    "500_503.png",
+)
 
 PRICE_SELECTORS = [
     "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
@@ -32,13 +47,104 @@ PRICE_SELECTORS = [
     "#priceblock_saleprice",
 ]
 
+# Indicators that a product is on Amazon Fresh. Amazon ships these in a few
+# layouts depending on category and region — match on any.
+FRESH_INDICATORS = [
+    "#amazon-fresh-buybox",
+    "[data-feature-name='freshBuyBox']",
+    "a[href*='/fresh/']",
+    "img[alt*='Amazon Fresh']",
+]
 
-async def scrape_one(context, asin: str, out_dir: Path) -> dict:
+# Element that holds the Fresh-specific price, separate from the standard price.
+FRESH_PRICE_SELECTORS = [
+    "#amazon-fresh-buybox .a-price .a-offscreen",
+    "[data-feature-name='freshBuyBox'] .a-price .a-offscreen",
+]
+
+
+async def _navigate_with_retry(page, url: str, max_retries: int = 2) -> None:
+    """Navigate to url, detecting Amazon's throttle/503 page (returns HTTP 200
+    with Dogs-of-Amazon markup). Retries with exponential backoff."""
+    for attempt in range(max_retries + 1):
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        except Exception as e:
+            if attempt >= max_retries:
+                raise
+            wait_s = 30 * (2**attempt)
+            print(
+                f"  navigation failed ({e}); backing off {wait_s}s",
+                file=sys.stderr,
+            )
+            await asyncio.sleep(wait_s)
+            continue
+
+        html = await page.content()
+        if any(marker in html for marker in THROTTLE_MARKERS):
+            if attempt >= max_retries:
+                print(
+                    "  Amazon throttle page after max retries; giving up.",
+                    file=sys.stderr,
+                )
+                return
+            wait_s = 30 * (2**attempt)
+            print(
+                f"  Amazon throttle page detected; backing off {wait_s}s",
+                file=sys.stderr,
+            )
+            await asyncio.sleep(wait_s)
+            continue
+        return
+
+
+async def _set_delivery_zip(context, page, zip_code: str) -> bool:
+    """Set Amazon's delivery location to the given ZIP. Returns True on success.
+
+    Uses the address-change endpoint via the location-popover flow because it
+    survives across requests in the same browser context. If any step fails
+    we return False and let the caller decide whether to continue."""
+    try:
+        await _navigate_with_retry(page, "https://www.amazon.com/")
+        await page.wait_for_timeout(1500)
+
+        loc_link = page.locator("#nav-global-location-popover-link")
+        if not await loc_link.count():
+            return False
+        await loc_link.first.click()
+        await page.wait_for_selector("#GLUXZipUpdateInput", timeout=10000)
+        await page.fill("#GLUXZipUpdateInput", zip_code)
+        await page.locator("#GLUXZipUpdate input[type='submit']").first.click()
+        await page.wait_for_timeout(2000)
+        return True
+    except Exception as e:
+        print(f"WARN: failed to set delivery ZIP {zip_code}: {e}", file=sys.stderr)
+        return False
+
+
+async def _detect_fresh(page) -> tuple[bool, float | None]:
+    """Return (fresh_available, fresh_price) for the current product page."""
+    for sel in FRESH_INDICATORS:
+        if await page.locator(sel).count():
+            fresh_price = None
+            for psel in FRESH_PRICE_SELECTORS:
+                loc = page.locator(psel)
+                if await loc.count():
+                    text = (await loc.first.text_content()) or ""
+                    m = PRICE_RE.search(text)
+                    if m:
+                        fresh_price = float(m.group(1))
+                        break
+            return True, fresh_price
+    return False, None
+
+
+async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dict:
     url = f"https://www.amazon.com/dp/{asin}"
     page = await context.new_page()
-    result = {"asin": asin, "url": url}
+    result: dict = {"asin": asin, "url": url}
     try:
-        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        await _navigate_with_retry(page, url)
         try:
             await page.wait_for_selector("#productTitle", timeout=20000)
         except Exception:
@@ -62,6 +168,14 @@ async def scrape_one(context, asin: str, out_dir: Path) -> dict:
         m = PRICE_RE.search(price_text or "")
         result["price"] = float(m.group(1)) if m else None
 
+        if with_fresh:
+            fresh_available, fresh_price = await _detect_fresh(page)
+            result["fresh_available"] = fresh_available
+            result["fresh_price"] = fresh_price
+        else:
+            result["fresh_available"] = False
+            result["fresh_price"] = None
+
         await page.screenshot(path=str(out_dir / f"{asin}.png"), full_page=False)
         html = await page.content()
         (out_dir / f"{asin}.html").write_text(html)
@@ -75,7 +189,10 @@ async def scrape_one(context, asin: str, out_dir: Path) -> dict:
     return result
 
 
-async def main(asins: list[str], out_dir: Path) -> None:
+async def main(asins: list[str], out_dir: Path, zip_code: str | None) -> None:
+    from playwright.async_api import async_playwright
+    from playwright_stealth import Stealth
+
     out_dir.mkdir(parents=True, exist_ok=True)
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(headless=True)
@@ -88,12 +205,31 @@ async def main(asins: list[str], out_dir: Path) -> None:
             viewport={"width": 1400, "height": 2200},
             locale="en-US",
         )
+
+        with_fresh = False
+        if zip_code:
+            print(f"Setting delivery ZIP to {zip_code}...", file=sys.stderr, flush=True)
+            setup_page = await context.new_page()
+            with_fresh = await _set_delivery_zip(context, setup_page, zip_code)
+            await setup_page.close()
+            if with_fresh:
+                print(
+                    "  ZIP set; will check Fresh availability per product.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "  ZIP setup did not complete; Fresh data will be omitted.",
+                    file=sys.stderr,
+                )
+
         results = []
         for asin in asins:
             print(f"--> {asin}", file=sys.stderr, flush=True)
-            r = await scrape_one(context, asin, out_dir)
+            r = await scrape_one(context, asin, out_dir, with_fresh)
             print(
-                f"    price={r.get('price')} ok={r.get('ok')}",
+                f"    price={r.get('price')} ok={r.get('ok')} "
+                f"fresh={r.get('fresh_available')}",
                 file=sys.stderr,
                 flush=True,
             )
@@ -111,5 +247,17 @@ if __name__ == "__main__":
     ap.add_argument(
         "--out", default="/tmp/amzn", help="Output directory (default: /tmp/amzn)."
     )
+    ap.add_argument(
+        "--zip",
+        dest="zip_code",
+        default=None,
+        help="US ZIP code (5 digits). When set, the scraper configures the "
+        "Amazon delivery location and reports fresh_available + fresh_price "
+        "per product. Without --zip, those fields are always false/null.",
+    )
     args = ap.parse_args()
-    asyncio.run(main(args.asins, Path(args.out)))
+
+    if args.zip_code is not None and not ZIP_RE.match(args.zip_code):
+        ap.error(f"--zip must be a 5-digit US ZIP code (got {args.zip_code!r})")
+
+    asyncio.run(main(args.asins, Path(args.out), args.zip_code))

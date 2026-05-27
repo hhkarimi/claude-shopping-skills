@@ -274,6 +274,57 @@ def test_search_pipeline_error_wraps_subprocess_failures():
     _ = sp
 
 
+def test_search_script_has_fresh_and_retry_logic():
+    """The search script must support --zip / --include-fresh and have the
+    throttle-page retry helper."""
+    body = (
+        REPO_ROOT / "skills" / "amazon-product-data" / "scripts" / "search.py"
+    ).read_text(encoding="utf-8")
+    assert "--include-fresh" in body
+    assert "ZIP_RE" in body
+    assert "THROTTLE_MARKERS" in body
+    assert "_navigate_with_retry" in body
+    assert "_set_delivery_zip" in body
+    assert "i=amazonfresh" in body
+
+
+def test_search_help_documents_fresh_flag():
+    SEARCH_SCRIPT = (
+        REPO_ROOT / "skills" / "amazon-product-data" / "scripts" / "search.py"
+    )
+    result = subprocess.run(
+        [sys.executable, str(SEARCH_SCRIPT), "--help"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "--zip" in result.stdout
+    assert "--include-fresh" in result.stdout
+
+
+def test_search_rejects_include_fresh_without_zip():
+    """--include-fresh requires --zip since Fresh storefront needs a location."""
+    SEARCH_SCRIPT = (
+        REPO_ROOT / "skills" / "amazon-product-data" / "scripts" / "search.py"
+    )
+    result = subprocess.run(
+        [sys.executable, str(SEARCH_SCRIPT), "yogurt", "--include-fresh"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "requires --zip" in result.stderr.lower() or "zip" in result.stderr.lower()
+
+
+def test_scrape_script_has_retry_logic():
+    SCRAPE_SCRIPT = (
+        REPO_ROOT / "skills" / "amazon-product-data" / "scripts" / "scrape.py"
+    )
+    body = SCRAPE_SCRIPT.read_text(encoding="utf-8")
+    assert "THROTTLE_MARKERS" in body
+    assert "_navigate_with_retry" in body
+
+
 def test_help_mentions_both_modes():
     """--help text should describe both --prices and --search modes."""
     result = subprocess.run(
