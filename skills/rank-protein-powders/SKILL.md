@@ -1,87 +1,50 @@
 ---
 name: rank-protein-powders
-description: Rank protein powders by $/g protein and calorie:protein ratio, with optional leucine adjustment for muscle-building cost comparison. Uses live Amazon prices via the amazon-product-data skill. Includes a curated database of common whey, pea, soy, egg, and blended-plant protein products.
+description: Rank protein powders by $/g protein, calorie:protein ratio, and leucine-adjusted cost. Uses live Amazon prices via the amazon-product-data skill. Database covers whey, pea, soy, egg, and plant blends.
 ---
 
 # Protein powder ranker
 
-Rank protein powders by economic + nutritional efficiency. Combines live Amazon pricing with curated nutrition data to produce a ranked comparison table including a clickable Amazon purchase URL per product.
+Ranks protein powders by unit cost ($/g protein), calorie:protein ratio, and leucine-adjusted cost (a muscle-building heuristic that normalizes plant proteins to whey-equivalent leucine).
 
-The actual ranking logic lives in `.claude-plugin/lib/ranking.py`; this skill's `scripts/rank.py` is a thin wrapper that points the shared logic at this skill's nutrition database.
+Math, CLI, and output formatting live in `.claude-plugin/lib/ranking.py`. This skill is curated nutrition data + a thin wrapper.
 
 ## When to use
 
-- The user wants to choose a protein powder by $/g protein, calorie:protein ratio, or muscle-building cost-efficiency.
-- The user wants to compare multiple brands or protein sources (whey, pea, soy, egg, blends).
-- The user has new ASINs to add to an existing comparison.
+- Choose a protein powder by cost, calorie efficiency, or muscle-building value.
+- Compare brands or protein sources (whey vs pea vs soy vs blends).
 
 ## When NOT to use
 
-- The user wants taste, mixability, or subjective reviews — this skill compares numbers only.
-- The user wants a single recommendation without seeing the data — provide one, but caveat that it's heuristic.
+- The user wants taste, mixability, or subjective reviews.
+- The user wants bars or edamame — use `rank-protein-bars` or `rank-dry-edamame`.
 
 ## How to use
 
-Two modes:
-
-### Search mode (one-command end-to-end)
+Search mode (recommended — one command):
 
 ```bash
-uv run scripts/rank.py --search "whey protein isolate 5 lb" --nutrition references/nutrition_data.json
+uv run scripts/rank.py --search "whey protein isolate 5 lb" \
+  --nutrition references/nutrition_data.json
 ```
 
-Searches Amazon, filters results to ASINs in the nutrition database, scrapes live prices, ranks. Search-result ASINs without nutrition data are listed at the end as candidates to add.
+Known-ASIN mode (when you've already scraped):
 
-### Known-ASIN mode
-
-1. Decide which ASINs to rank. Defaults live in `references/nutrition_data.json` (12 products as of last update). The user may add their own.
-2. Scrape live prices via the `amazon-product-data` skill:
-   ```bash
-   uv run ../amazon-product-data/scripts/scrape.py B000MAK59O B01HOPJAAE B002TG3QPO ...
-   ```
-3. Run the ranker:
-   ```bash
-   uv run scripts/rank.py --prices /tmp/amzn/results.json --nutrition references/nutrition_data.json
-   ```
-4. Prints a markdown table sorted by $/g protein. Pass `--sort cal_protein` or `--sort leucine_adjusted` to re-sort.
-
-To rank the full default set in one shot:
 ```bash
-ASINS=$(jq -r 'keys[]' references/nutrition_data.json | tr '\n' ' ')
-uv run ../amazon-product-data/scripts/scrape.py $ASINS
-uv run scripts/rank.py --prices /tmp/amzn/results.json --nutrition references/nutrition_data.json
+uv run ../amazon-product-data/scripts/scrape.py B000MAK59O B01HOPJAAE
+uv run scripts/rank.py --prices /tmp/amzn/results.json \
+  --nutrition references/nutrition_data.json
 ```
 
-## Nutrition database
+Re-sort with `--sort cal_protein` or `--sort leucine_adjusted`.
 
-`references/nutrition_data.json` keys products by ASIN. Each entry has:
-- `name`: human label
-- `type`: `whey_isolate`, `whey_concentrate`, `whey_blend`, `pea`, `soy`, `egg`, `pea_rice_blend`
-- `servings_per_container`: int
-- `protein_per_serving_g`: int
-- `calories_per_serving`: int
-- `leucine_per_serving_g`: float
+## Domain-specific schema notes
 
-Approximate leucine fractions by source (used if a manufacturer doesn't publish the value):
-- Whey isolate: ~11% of protein
-- Whey concentrate / blend: ~10%
-- Egg white: ~8.5%
-- Soy isolate: ~8%
-- Pea isolate: ~8%
-- Pea+rice blend: ~8%
+Shared schema documented in [CONTRIBUTING.md](../../CONTRIBUTING.md#add-a-product-to-a-rank--skill). Valid `type` values for this skill and their approximate leucine fractions:
 
-## Leucine adjustment
+- `whey_isolate` — ~11% of protein
+- `whey_concentrate`, `whey_blend` — ~10%
+- `egg` — ~8.5%
+- `soy`, `pea`, `pea_rice_blend` — ~8%
 
-Muscle protein synthesis (MPS) requires ~2.5–3 g leucine per serving. Whey hits this at ~25 g protein; pea/soy needs ~30–35 g. The `leucine_adjusted` column normalizes $/g protein to whey-equivalent cost so plant and animal sources can be compared as cost-per-anabolic-unit.
-
-Formula: `leucine_adjusted = dollar_per_g_protein * (0.11 / leucine_fraction_of_protein)`.
-
-This is a heuristic. At total daily protein ≥ 1.6 g/kg bodyweight, source differences in hypertrophy outcomes shrink to nil per recent meta-analyses (Lim 2021, Nichele 2022).
-
-## Adding new products
-
-1. Find the Amazon ASIN.
-2. Add an entry to `references/nutrition_data.json` with manufacturer label values. Use the leucine fraction guide above if leucine isn't published.
-3. Re-run the scrape + rank flow.
-
-ASINs scraped without a nutrition entry are listed in a separate "unknown nutrition" section of the output and excluded from ranking.
+Use these to estimate `leucine_per_serving_g` when the manufacturer doesn't publish it.
