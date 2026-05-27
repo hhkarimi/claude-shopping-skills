@@ -277,7 +277,9 @@ def test_search_pipeline_error_wraps_subprocess_failures():
 def test_search_script_has_fresh_and_retry_logic():
     """The search script must support --zip / --include-fresh and use the
     throttle-page retry helper. The retry/zip helpers themselves live in
-    _lib.py — we check that search.py imports them."""
+    _lib.py — we check that search.py imports them, AND that search.py does
+    not define local copies of them (regression-proof against accidental
+    re-duplication)."""
     scripts_dir = REPO_ROOT / "skills" / "amazon-product-data" / "scripts"
     search_body = (scripts_dir / "search.py").read_text(encoding="utf-8")
     lib_body = (scripts_dir / "_lib.py").read_text(encoding="utf-8")
@@ -288,9 +290,12 @@ def test_search_script_has_fresh_and_retry_logic():
     assert "from _lib import" in search_body
     assert "navigate_with_retry" in search_body
     assert "set_delivery_zip" in search_body
+    # No local function definitions — they must come from _lib only.
+    assert "async def navigate_with_retry" not in search_body
+    assert "async def set_delivery_zip" not in search_body
     # The helper definitions and shared constants live in _lib.py.
-    assert "navigate_with_retry" in lib_body
-    assert "set_delivery_zip" in lib_body
+    assert "async def navigate_with_retry" in lib_body
+    assert "async def set_delivery_zip" in lib_body
     assert "ZIP_RE" in lib_body
     assert "THROTTLE_MARKERS" in lib_body
 
@@ -324,15 +329,47 @@ def test_search_rejects_include_fresh_without_zip():
 
 
 def test_scrape_script_has_retry_logic():
-    """scrape.py imports the shared retry helper from _lib."""
+    """scrape.py imports the shared retry helper from _lib and does NOT
+    define local copies (regression guard against accidental re-duplication)."""
     scripts_dir = REPO_ROOT / "skills" / "amazon-product-data" / "scripts"
     scrape_body = (scripts_dir / "scrape.py").read_text(encoding="utf-8")
     lib_body = (scripts_dir / "_lib.py").read_text(encoding="utf-8")
 
     assert "from _lib import" in scrape_body
     assert "navigate_with_retry" in scrape_body
-    assert "navigate_with_retry" in lib_body
+    # No local function definitions — they must come from _lib only.
+    assert "async def navigate_with_retry" not in scrape_body
+    assert "async def set_delivery_zip" not in scrape_body
+    # Helpers + markers live in _lib.py.
+    assert "async def navigate_with_retry" in lib_body
     assert "THROTTLE_MARKERS" in lib_body
+
+
+def test_lib_module_imports_cleanly_and_exports_helpers():
+    """Smoke test for _lib.py: importable from the script's directory, no
+    third-party deps at module level, and the documented symbols are present.
+
+    Adds the script directory to sys.path the same way the entrypoint scripts
+    do, then imports the module and checks its public surface."""
+    import importlib
+
+    scripts_dir = REPO_ROOT / "skills" / "amazon-product-data" / "scripts"
+    sys.path.insert(0, str(scripts_dir))
+    try:
+        # Force a fresh import in case a previous test poisoned the cache.
+        if "_lib" in sys.modules:
+            del sys.modules["_lib"]
+        _lib = importlib.import_module("_lib")
+    finally:
+        sys.path.pop(0)
+    assert callable(_lib.navigate_with_retry)
+    assert callable(_lib.set_delivery_zip)
+    assert _lib.ZIP_RE.match("12345")
+    assert not _lib.ZIP_RE.match("abcde")
+    assert isinstance(_lib.THROTTLE_MARKERS, tuple)
+    assert "/dogsofamazon/" in _lib.THROTTLE_MARKERS
+    # New exception class for explicit throttle signaling.
+    assert issubclass(_lib.ThrottleExhausted, Exception)
 
 
 def test_help_mentions_both_modes():

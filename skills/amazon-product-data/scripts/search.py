@@ -29,10 +29,12 @@ from urllib.parse import quote_plus
 # Playwright deps are imported inside search() so --help / arg validation runs
 # without requiring the heavy deps.
 
-# Shared 503-retry and ZIP-setting helpers live in _lib.py (co-located).
+# Add this script's directory to sys.path so `_lib` resolves even when this
+# script is imported as a module rather than executed directly via uv run.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib import (  # noqa: E402
-    THROTTLE_MARKERS,  # re-exported for tests that grep this file  # noqa: F401
     ZIP_RE,
+    ThrottleExhausted,
     navigate_with_retry,
     set_delivery_zip,
 )
@@ -99,7 +101,15 @@ async def _run_one_search(page, label: str, url: str, max_results: int) -> list[
     """Run a single search against the given URL and return parsed cards."""
     from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
-    await navigate_with_retry(page, url)
+    try:
+        await navigate_with_retry(page, url)
+    except ThrottleExhausted as e:
+        print(
+            f"WARN: {label} search hit Amazon throttle ({e}). "
+            "Returning empty results; artifacts saved for diagnosis.",
+            file=sys.stderr,
+        )
+        return []
 
     results_rendered = True
     try:

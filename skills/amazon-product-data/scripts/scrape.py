@@ -27,13 +27,14 @@ from pathlib import Path
 # Playwright deps are imported inside main() so `--help` and arg validation
 # don't require the heavy deps to be installed — useful for fast CLI tests.
 
-# Shared 503-retry and ZIP-setting helpers live in _lib.py (also at this dir).
-from _lib import (  # noqa: E402
-    THROTTLE_MARKERS,  # re-exported so existing tests can still find the marker  # noqa: F401
-    ZIP_RE,
-    navigate_with_retry,
-    set_delivery_zip,
-)
+# Add this script's directory to sys.path so `_lib` resolves even when this
+# script is imported as a module rather than executed directly via uv run.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib import ZIP_RE, navigate_with_retry, set_delivery_zip  # noqa: E402
+
+# Note: scrape_one's generic `except Exception` catches _lib's ThrottleExhausted
+# (RuntimeError subclass), so we don't import it explicitly here — its message
+# lands in result["error"] just like any other navigation failure.
 
 PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
 

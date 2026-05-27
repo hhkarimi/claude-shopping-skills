@@ -24,13 +24,22 @@ THROTTLE_MARKERS = (
 )
 
 
+class ThrottleExhausted(RuntimeError):
+    """Raised by `navigate_with_retry` when Amazon's 503/throttle page is
+    served on every retry. Callers can catch this to save artifacts, log a
+    diagnostic, and continue gracefully rather than crashing with a generic
+    'page selector not found' error 20 seconds later."""
+
+
 async def navigate_with_retry(page, url: str, max_retries: int = 2) -> None:
     """Navigate to `url`, detecting Amazon's throttle/503 page (which returns
     HTTP 200 with Dogs-of-Amazon markup) and retrying with exponential backoff.
 
     Retries on both Playwright exceptions and on-page-content throttle markers.
-    Max wait per cycle: 30s, 60s. Gives up silently after max_retries; the
-    caller should inspect what got loaded."""
+    Max wait per cycle: 30s, 60s. After exhausting retries:
+    - Playwright exceptions: re-raised as-is.
+    - Throttle markers: raises ThrottleExhausted so callers get an explicit
+      signal rather than a silent return + downstream selector timeout."""
     for attempt in range(max_retries + 1):
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=45000)
@@ -48,11 +57,10 @@ async def navigate_with_retry(page, url: str, max_retries: int = 2) -> None:
         html = await page.content()
         if any(marker in html for marker in THROTTLE_MARKERS):
             if attempt >= max_retries:
-                print(
-                    "  Amazon throttle page after max retries; giving up.",
-                    file=sys.stderr,
+                raise ThrottleExhausted(
+                    f"Amazon throttle page returned for {url} after "
+                    f"{max_retries} retries"
                 )
-                return
             wait_s = 30 * (2**attempt)
             print(
                 f"  Amazon throttle page detected; backing off {wait_s}s",
