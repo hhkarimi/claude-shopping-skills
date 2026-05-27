@@ -30,6 +30,14 @@ from pathlib import Path
 PRICE_RE = re.compile(r"\$([0-9]+(?:\.[0-9]{2})?)")
 ZIP_RE = re.compile(r"^[0-9]{5}$")
 
+# Amazon's "Dogs of Amazon" 503 page returns HTTP 200 with these markers.
+# Detect by content because HTTP status would mislead.
+THROTTLE_MARKERS = (
+    "Sorry! Something went wrong on our end",
+    "/dogsofamazon/",
+    "500_503.png",
+)
+
 PRICE_SELECTORS = [
     "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
     "#corePrice_feature_div .a-price .a-offscreen",
@@ -55,6 +63,41 @@ FRESH_PRICE_SELECTORS = [
 ]
 
 
+async def _navigate_with_retry(page, url: str, max_retries: int = 2) -> None:
+    """Navigate to url, detecting Amazon's throttle/503 page (returns HTTP 200
+    with Dogs-of-Amazon markup). Retries with exponential backoff."""
+    for attempt in range(max_retries + 1):
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        except Exception as e:
+            if attempt >= max_retries:
+                raise
+            wait_s = 30 * (2**attempt)
+            print(
+                f"  navigation failed ({e}); backing off {wait_s}s",
+                file=sys.stderr,
+            )
+            await asyncio.sleep(wait_s)
+            continue
+
+        html = await page.content()
+        if any(marker in html for marker in THROTTLE_MARKERS):
+            if attempt >= max_retries:
+                print(
+                    "  Amazon throttle page after max retries; giving up.",
+                    file=sys.stderr,
+                )
+                return
+            wait_s = 30 * (2**attempt)
+            print(
+                f"  Amazon throttle page detected; backing off {wait_s}s",
+                file=sys.stderr,
+            )
+            await asyncio.sleep(wait_s)
+            continue
+        return
+
+
 async def _set_delivery_zip(context, page, zip_code: str) -> bool:
     """Set Amazon's delivery location to the given ZIP. Returns True on success.
 
@@ -62,9 +105,7 @@ async def _set_delivery_zip(context, page, zip_code: str) -> bool:
     survives across requests in the same browser context. If any step fails
     we return False and let the caller decide whether to continue."""
     try:
-        await page.goto(
-            "https://www.amazon.com/", wait_until="domcontentloaded", timeout=30000
-        )
+        await _navigate_with_retry(page, "https://www.amazon.com/")
         await page.wait_for_timeout(1500)
 
         loc_link = page.locator("#nav-global-location-popover-link")
@@ -103,7 +144,7 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
     page = await context.new_page()
     result: dict = {"asin": asin, "url": url}
     try:
-        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        await _navigate_with_retry(page, url)
         try:
             await page.wait_for_selector("#productTitle", timeout=20000)
         except Exception:

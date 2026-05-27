@@ -199,10 +199,11 @@ class SearchPipelineError(RuntimeError):
     (artifact path, WAF hint, install hint) so they never see a raw traceback."""
 
 
-# Per-subprocess defaults. Search hits one URL; scrape hits N.
-SEARCH_TIMEOUT_S = 180
-SCRAPE_PER_ASIN_S = 30
-SCRAPE_BASE_TIMEOUT_S = 60
+# Per-subprocess defaults. Search hits one or two URLs (+1 for Fresh storefront);
+# scrape hits N. Generous timeouts to absorb 503-retry backoffs (30s + 60s).
+SEARCH_TIMEOUT_S = 360
+SCRAPE_PER_ASIN_S = 60
+SCRAPE_BASE_TIMEOUT_S = 120
 
 
 def _check_uv_available() -> None:
@@ -243,20 +244,27 @@ def _run_subprocess(
         ) from e
 
 
-def _run_search(query: str, max_results: int, out_dir: Path) -> list[dict]:
-    """Shell out to search.py and parse its JSON output."""
+def _run_search(
+    query: str, max_results: int, out_dir: Path, zip_code: str | None = None
+) -> list[dict]:
+    """Shell out to search.py and parse its JSON output. When zip_code is set,
+    also asks search.py to query the Amazon Fresh storefront (--include-fresh)
+    so Fresh-specific ASINs surface in the merged result set."""
     out_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "uv",
+        "run",
+        str(AMAZON_SCRIPTS_DIR / "search.py"),
+        query,
+        "--max-results",
+        str(max_results),
+        "--out",
+        str(out_dir),
+    ]
+    if zip_code:
+        cmd += ["--zip", zip_code, "--include-fresh"]
     _run_subprocess(
-        [
-            "uv",
-            "run",
-            str(AMAZON_SCRIPTS_DIR / "search.py"),
-            query,
-            "--max-results",
-            str(max_results),
-            "--out",
-            str(out_dir),
-        ],
+        cmd,
         description="Amazon search",
         timeout=SEARCH_TIMEOUT_S,
         artifact_dir=out_dir,
@@ -347,7 +355,9 @@ def run_cli(description: str) -> None:
         if args.search is not None:
             _check_uv_available()
             print(f"Searching Amazon for: {args.search!r}", file=sys.stderr, flush=True)
-            search_results = _run_search(args.search, args.max_results, args.out)
+            search_results = _run_search(
+                args.search, args.max_results, args.out, zip_code=args.zip_code
+            )
             known, unknown_hits = filter_search_results(search_results, nutrition)
             if not known:
                 print(
