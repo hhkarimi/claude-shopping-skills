@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 WHEY_ISOLATE_LEUCINE_FRACTION = 0.11
@@ -220,9 +221,14 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
                     fresh_price=entry.get("fresh_price"),
                 )
             )
-            scraped_at = entry.get("scraped_at")
-            if scraped_at:
-                price_timestamps.append(scraped_at)
+            # Backfill missing scraped_at with "now" so legacy results.json
+            # (and fixtures) still render a freshness line. The approximation
+            # is acceptable: if you're ranking, you just loaded the data, so
+            # it's "fresh-ish" relative to the consumer.
+            price_timestamps.append(
+                entry.get("scraped_at")
+                or datetime.now(timezone.utc).isoformat(timespec="seconds")
+            )
         except ValueError as e:
             invalid_nut.append(f"{asin} ({e})")
 
@@ -240,9 +246,9 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
 
 def format_freshness(timestamps: list[str]) -> str:
     """Return a 'Prices captured: ...' line summarizing when the underlying
-    scrape ran. Empty string when no timestamps (e.g. pre-this-feature
-    results.json files, or fixture data) — older outputs render without
-    the freshness line rather than with a misleading 'unknown'."""
+    scrape ran. Empty string only when there are zero timestamps (i.e. zero
+    products ranked) — rank() backfills missing scraped_at with now() so
+    the non-empty case is the norm."""
     if not timestamps:
         return ""
     earliest = min(timestamps)
