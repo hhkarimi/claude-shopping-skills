@@ -162,6 +162,38 @@ def test_print_report_renders_table_when_rows_present(capsys):
     assert "| X |" in captured.out
 
 
+def test_print_report_lists_all_unknown_hits_with_source(capsys):
+    """Discovery feed must include every unknown ASIN (not be capped) and tag
+    each with its source ([regular]/[fresh]) so the triager can tell which
+    storefront surfaced it."""
+    from ranking import print_report
+
+    unknowns = [
+        {
+            "asin": f"B{i:09d}",
+            "title": f"product {i}",
+            "source": "fresh" if i % 2 else "regular",
+        }
+        for i in range(15)
+    ]
+    print_report(
+        {
+            "rows": [],
+            "missing_price": [],
+            "missing_nut": [],
+            "invalid_nut": [],
+            "malformed": [],
+            "sort": "dollar_per_g_protein",
+        },
+        unknown_search_hits=unknowns,
+    )
+    captured = capsys.readouterr()
+    for i in range(15):
+        assert f"B{i:09d}" in captured.err, f"unknown #{i} dropped from discovery feed"
+    assert "[regular]" in captured.err
+    assert "[fresh]" in captured.err
+
+
 def test_uv_pre_flight_check_fails_clearly(monkeypatch):
     """When `uv` isn't on PATH, the orchestrator must raise SearchPipelineError
     with an install hint — not let subprocess.run die with FileNotFoundError."""

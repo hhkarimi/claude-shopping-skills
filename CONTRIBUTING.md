@@ -78,7 +78,7 @@ When you run a `rank-*` skill in search mode, the ranker only considers ASINs th
 
 The recommended flow:
 
-1. **Run with `--search` + `--zip` + `--include-fresh`** to surface both regular Amazon and Fresh storefront candidates:
+1. **Run with `--search` + `--zip`** to surface both regular Amazon and Fresh storefront candidates (rank.py passes `--include-fresh` through to search.py automatically when `--zip` is set):
    ```bash
    uv run skills/rank-protein-bars/scripts/rank.py \
      --search "protein bars" --zip 78752 \

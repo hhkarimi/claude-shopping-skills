@@ -234,9 +234,11 @@ def print_report(result: dict, unknown_search_hits: list[dict] | None = None) ->
             "add to nutrition_data.json to include in future rankings:",
             file=sys.stderr,
         )
-        for hit in unknown_search_hits[:10]:
+        for hit in unknown_search_hits:
             title = (hit.get("title") or "")[:70]
-            print(f"  {hit['asin']}  {title}", file=sys.stderr)
+            source = hit.get("source")
+            tag = f" [{source}]" if source else ""
+            print(f"  {hit['asin']}{tag}  {title}", file=sys.stderr)
 
 
 def filter_search_results(
