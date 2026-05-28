@@ -94,5 +94,47 @@
     "protein_per_serving_g": 30,
     "calories_per_serving": 150,
     "leucine_per_serving_g": 2.4
+  },
+  "B002U7YZXY": {
+    "name": "Isopure Zero Carb Whey Isolate, Vanilla, 1 lb (Amazon Fresh)",
+    "type": "whey_isolate",
+    "channel": "fresh",
+    "servings_per_container": 15,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 2.75
+  },
+  "B000GISU1M": {
+    "name": "Optimum Nutrition Gold Standard Whey, Vanilla Ice Cream, 5 lb",
+    "type": "whey_blend",
+    "servings_per_container": 74,
+    "protein_per_serving_g": 24,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 2.4
+  },
+  "B06ZZ3PJQD": {
+    "name": "Premier Protein Powder, Vanilla Milkshake, 23.3 oz",
+    "type": "whey_blend",
+    "servings_per_container": 17,
+    "protein_per_serving_g": 30,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 3.3
+  },
+  "B0BRM7MB3Y": {
+    "name": "Vega Essential Plant Protein, Vanilla, 32.5 oz (Amazon Fresh)",
+    "type": "pea",
+    "channel": "fresh",
+    "servings_per_container": 20,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 150,
+    "leucine_per_serving_g": 2.0
+  },
+  "B0BYBB4HF7": {
+    "name": "GHOST Whey Protein, Cinnabon, 2 lb",
+    "type": "whey_blend",
+    "servings_per_container": 25,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 140,
+    "leucine_per_serving_g": 2.75
   }
 }
