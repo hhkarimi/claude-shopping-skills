@@ -22,8 +22,13 @@ import asyncio
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+# We stamp scraped_at in Eastern Time. zoneinfo handles the EST/EDT switch
+# automatically, so winter scrapes get -05:00 and summer scrapes get -04:00.
+EASTERN = ZoneInfo("America/New_York")
 
 # Playwright deps are imported inside main() so `--help` and arg validation
 # don't require the heavy deps to be installed — useful for fast CLI tests.
@@ -92,7 +97,7 @@ async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dic
     result: dict = {
         "asin": asin,
         "url": url,
-        "scraped_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "scraped_at": datetime.now(EASTERN).isoformat(timespec="seconds"),
     }
     try:
         await navigate_with_retry(page, url)

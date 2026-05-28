@@ -7,7 +7,7 @@
     "price": 181.99,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   },
   {
     "asin": "B00NBIUGA2",
@@ -17,7 +17,7 @@
     "price": 57.99,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   },
   {
     "asin": "B01COARRFE",
@@ -27,6 +27,6 @@
     "price": 23.19,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   }
 ]

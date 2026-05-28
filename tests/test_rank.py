@@ -549,13 +549,13 @@ def test_format_freshness_empty_when_no_timestamps():
 
 
 def test_format_freshness_single_timestamp_when_all_equal():
-    ts = "2026-05-27T18:34:21+00:00"
+    ts = "2026-05-27T18:34:21-04:00"
     assert format_freshness([ts, ts, ts]) == f"Prices captured: {ts}"
 
 
 def test_format_freshness_range_when_spans_multiple_scrapes():
-    earlier = "2026-05-25T10:00:00+00:00"
-    later = "2026-05-27T18:34:21+00:00"
+    earlier = "2026-05-25T10:00:00-04:00"
+    later = "2026-05-27T18:34:21-04:00"
     out = format_freshness([later, earlier, later])
     assert out == f"Prices captured: {earlier} .. {later}"
 
@@ -577,11 +577,11 @@ def test_rank_collects_scraped_at_timestamps():
         {
             "asin": "B0TEST00001",
             "price": 25.0,
-            "scraped_at": "2026-05-27T18:00:00+00:00",
+            "scraped_at": "2026-05-27T18:00:00-04:00",
         }
     ]
     result = rank(prices, nutrition, sort="dollar_per_g_protein")
-    assert result["price_timestamps"] == ["2026-05-27T18:00:00+00:00"]
+    assert result["price_timestamps"] == ["2026-05-27T18:00:00-04:00"]
 
 
 def test_rank_omits_timestamp_when_scraped_at_absent():

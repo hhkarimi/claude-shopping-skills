@@ -9,7 +9,7 @@
     "fresh_price": null,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   },
   {
     "asin": "B006WBVSV6",
@@ -21,7 +21,7 @@
     "fresh_price": null,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   },
   {
     "asin": "B0D7J7595Z",
@@ -33,7 +33,7 @@
     "fresh_price": null,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   },
   {
     "asin": "B007MPI6D4",
@@ -45,6 +45,6 @@
     "fresh_price": null,
     "html_bytes": 0,
     "ok": true,
-    "scraped_at": "2026-05-27T22:00:00+00:00"
+    "scraped_at": "2026-05-27T22:00:00-04:00"
   }
 ]
