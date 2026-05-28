@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.4.0...v0.5.0) (2026-05-28)
+
+
+### Features
+
+* **powders:** discovery run adds 5 entries + uncaps discovery feed ([#17](https://github.com/hhkarimi/claude-shopping-skills/issues/17)) ([0ed5364](https://github.com/hhkarimi/claude-shopping-skills/commit/0ed5364311b1fb723f7d85446e1f432ffbdd08d9))
+
 ## [0.4.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.3.0...v0.4.0) (2026-05-28)
 
 
