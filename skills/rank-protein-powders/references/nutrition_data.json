@@ -192,5 +192,21 @@
     "protein_per_serving_g": 25,
     "calories_per_serving": 120,
     "leucine_per_serving_g": 2.5
+  },
+  "B072M8GTXW": {
+    "name": "Levels Grass-Fed Whey, Pure Chocolate, 2 lb",
+    "type": "whey_concentrate",
+    "servings_per_container": 30,
+    "protein_per_serving_g": 24,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 2.4
+  },
+  "B072Z3PD8V": {
+    "name": "Klean Athlete Klean Isolate Whey, 20 servings",
+    "type": "whey_isolate",
+    "servings_per_container": 20,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 110,
+    "leucine_per_serving_g": 2.2
   }
 }
