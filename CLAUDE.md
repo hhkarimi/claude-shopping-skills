@@ -23,17 +23,22 @@ When in doubt, prefer `chore:` or `docs:` for non-user-visible changes — a mis
 
 ## Architecture
 
-Two layers:
+Two-layer plugin with one shared lib per concern:
 
-1. **`amazon-product-data`** — generic Amazon search (`search.py`) + scrape (`scrape.py`) using stealth Playwright. Bypasses AWS WAF.
-2. **`rank-*` skills** — each is a thin wrapper around `.claude-plugin/lib/ranking.py`. The shared module owns the math, the schema validation, and the CLI. Each skill provides only:
+1. **`amazon-product-data` skill** — generic Amazon search (`search.py`) + scrape (`scrape.py`) using stealth Playwright. Bypasses AWS WAF. The two scripts share `_lib.py` (co-located) for the 503-retry helper and the delivery-ZIP setter — edit there for retry/throttle changes, not in the individual scripts.
+
+2. **`rank-*` skills** — each is a thin wrapper around `.claude-plugin/lib/ranking.py`. The shared module owns the math, the schema, the CLI, and the table renderer (incl. Channel column + `% Δ vs prev` between adjacent ranks). Each skill provides only:
    - `references/nutrition_data.json` — curated per-domain data
    - `scripts/rank.py` — ~15-line wrapper that calls `run_cli(description=...)`
    - `SKILL.md` — domain-specific `type` values + leucine fractions
 
-**Adding a new rank-* domain**: copy an existing skill folder (e.g. `skills/rank-dry-edamame`), replace the nutrition data, edit `SKILL.md` for the new domain.
+**Channel column**: derived from each price entry's `fresh_available` field (set by scrape.py when `--zip` is passed). Falls back to the nutrition entry's `channel` field, then `"regular"`. When `fresh_available=True` AND a separate `fresh_price` was captured, that price drives the $/g math.
+
+**Adding a new rank-* domain**: copy an existing skill folder (e.g. `skills/rank-greek-yogurt` as the most recent template), replace the nutrition data, edit `SKILL.md` for the new domain.
 
 **Adding a product to an existing skill**: edit that skill's `references/nutrition_data.json`. Schema is shared across rank-* — see [CONTRIBUTING.md](CONTRIBUTING.md#add-a-product-to-a-rank--skill).
+
+**Cross-channel pairs**: same product on Fresh + Regular under different ASINs? Add both as separate entries with explicit `"channel"` fields — see [CONTRIBUTING.md](CONTRIBUTING.md#cross-channel-pairs) for the think! bars example.
 
 **Rule (enforced by `tests/test_wrappers.py`)**: rank-* `scripts/rank.py` files must stay thin — no `def`, no `class`, no copy-paste of the ranking logic. Extend `.claude-plugin/lib/ranking.py` instead.
 
@@ -50,11 +55,11 @@ CI runs all four on every PR — same commands, no surprises.
 
 ## Releases
 
-[release-please](https://github.com/googleapis/release-please) watches `main` for Conventional Commits and opens a PR titled `chore: release vX.Y.Z` whenever something releasable lands. Merging that PR creates the Git tag and GitHub Release.
+[release-please](https://github.com/googleapis/release-please) watches `main` for Conventional Commits and opens a PR titled `chore(main): release vX.Y.Z` whenever something releasable lands. Merging that PR creates the Git tag and GitHub Release.
 
-- Current baseline version: `0.1.0` (see `.release-please-manifest.json`)
+- Current released version: see [CHANGELOG.md](CHANGELOG.md). At time of writing v0.3.0.
 - `.claude-plugin/plugin.json`'s `version` field is auto-bumped by release-please.
-- The first release tag (v0.1.0) has not been created yet. Either wait for the first `feat:` PR after this convention lands, or run `gh release create v0.1.0 --generate-notes` to publish it manually.
+- Versions live in `.release-please-manifest.json` too — both files must stay in sync; release-please handles this automatically.
 
 ## Things to NOT do
 
