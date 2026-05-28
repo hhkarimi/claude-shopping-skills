@@ -163,5 +163,30 @@
     "protein_per_serving_g": 11,
     "calories_per_serving": 290,
     "leucine_per_serving_g": 0.88
+  },
+  "B0886W1521": {
+    "name": "Amazon Grocery Protein Chewy Bars, Peanut + Almond + Dark Chocolate, 5 ct (Amazon Fresh)",
+    "type": "whey_soy_blend",
+    "channel": "fresh",
+    "servings_per_container": 5,
+    "protein_per_serving_g": 10,
+    "calories_per_serving": 140,
+    "leucine_per_serving_g": 0.95
+  },
+  "B08ZVHH13J": {
+    "name": "ALOHA Organic Plant Based, Peanut Butter Cup, 12 ct",
+    "type": "soy_rice_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 14,
+    "calories_per_serving": 220,
+    "leucine_per_serving_g": 1.12
+  },
+  "B000EXQ4AS": {
+    "name": "NuGo Smarte Carb 20g, Peanut Butter Crunch, 12 ct",
+    "type": "whey_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 160,
+    "leucine_per_serving_g": 2.0
   }
 }
