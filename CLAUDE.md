@@ -32,6 +32,8 @@ Two-layer plugin with one shared lib per concern:
    - `scripts/rank.py` — ~15-line wrapper that calls `run_cli(description=...)`
    - `SKILL.md` — domain-specific `type` values + leucine fractions
 
+**Summarizing rank output to the user**: when condensing the ranking or picks table into a chat reply, **always retain the Buy column** (`[link](https://www.amazon.com/dp/<ASIN>)`). The user is reading the ranking to make a purchase decision — a pick without a click-to-buy link forces them to look up the ASIN themselves. Trim other columns for brevity if needed, but not Buy.
+
 **Channel column**: derived from each price entry's `fresh_available` field (set by scrape.py when `--zip` is passed). Falls back to the nutrition entry's `channel` field, then `"regular"`. When `fresh_available=True` AND a separate `fresh_price` was captured, that price drives the $/g math.
 
 **Price freshness**: scrape.py stamps each result with `scraped_at` (ISO-8601 in Eastern Time via `zoneinfo.ZoneInfo("America/New_York")` — EDT in summer, EST in winter, DST switch is automatic). rank.py surfaces this as a "Prices captured: …" line below the picks table. Amazon prices move — sale items can shift hourly, stable SKUs weekly. Re-scrape within 24h of any purchase decision. The `scraped_at` field is on the scrape output (results.json), **not** in `nutrition_data.json` — nutrition facts are static, so don't conflate the two. Committed test fixtures carry an explicit `scraped_at` baked in (currently `2026-05-27T22:00:00-04:00`) so the freshness line renders deterministically in CI. External `results.json` that predates the field will simply not render the line — accurate ("we don't know when these were captured") rather than misleading.
