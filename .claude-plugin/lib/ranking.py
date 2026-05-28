@@ -148,6 +148,43 @@ def format_table(rows: list[dict], sort_key: str = "dollar_per_g_protein") -> st
     return "\n".join(lines)
 
 
+PICK_CRITERIA: tuple[tuple[str, str], ...] = (
+    ("Lowest $/g protein", "dollar_per_g_protein"),
+    ("Best muscle-building $/g (leucine-adj)", "leucine_adjusted"),
+    ("Leanest macros (cal:protein)", "cal_protein"),
+)
+
+
+def compute_picks(rows: list[dict]) -> list[tuple[str, dict]]:
+    """Return [(goal_label, winner_row), ...] — the best row for each scoring
+    criterion. Returns [] when fewer than 2 rows (picking from one is silly)."""
+    if len(rows) < 2:
+        return []
+    return [(label, min(rows, key=lambda r: r[key])) for label, key in PICK_CRITERIA]
+
+
+def format_picks(rows: list[dict]) -> str:
+    """Render the 'best by goal' summary table — one row per scoring criterion,
+    each showing the winning product with cal:protein + leucine-adj alongside
+    so the user can compare on dimensions other than the winning one."""
+    picks = compute_picks(rows)
+    if not picks:
+        return ""
+    header = (
+        "| Goal | Pick | Price | $/g protein | Cal:protein | Leucine-adj $/g | Buy |\n"
+        "|---|---|---:|---:|---:|---:|:---:|"
+    )
+    lines = [header]
+    for label, r in picks:
+        url = r.get("url") or amazon_url(r["asin"])
+        lines.append(
+            f"| {label} | {r['name']} | ${r['price']:.2f} | "
+            f"${r['dollar_per_g_protein']:.4f} | {r['cal_protein']:.2f} | "
+            f"${r['leucine_adjusted']:.4f} | [link]({url}) |"
+        )
+    return "\n".join(lines)
+
+
 def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
     """Compute ranked rows + skip categories. Pure function — no I/O.
 
@@ -204,6 +241,12 @@ def print_report(result: dict, unknown_search_hits: list[dict] | None = None) ->
     if rows:
         print(format_table(rows, sort_key=result["sort"]))
         print()
+        picks_table = format_picks(rows)
+        if picks_table:
+            print("Best pick by goal:")
+            print()
+            print(picks_table)
+            print()
     print(f"Sorted by: {result['sort']}")
     print(f"Ranked: {len(rows)} products")
 

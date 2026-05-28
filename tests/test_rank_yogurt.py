@@ -27,6 +27,18 @@ def _run_rank(sort: str | None = None) -> str:
     return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
 
 
+def _main_table_rows(out: str) -> list[str]:
+    """Return only the data rows from the main ranking table (above the
+    'Best pick by goal:' summary table, which is also markdown and would
+    otherwise pollute simple [0]/[-1] indexing in tests)."""
+    main_section = out.split("Best pick by goal:")[0]
+    return [
+        line
+        for line in main_section.splitlines()
+        if line.startswith("|") and "---" not in line and "Product" not in line
+    ]
+
+
 def test_cli_runs_against_fixture():
     out = _run_rank()
     assert "Ranked: 4 products" in out
@@ -50,11 +62,7 @@ def test_365_wins_on_unit_cost_in_fixture():
     - Greek Gods at $3.88/(3*6)=$0.2156/g
     """
     out = _run_rank()
-    rows = [
-        line
-        for line in out.splitlines()
-        if line.startswith("|") and "---" not in line and "Product" not in line
-    ]
+    rows = _main_table_rows(out)
     assert "365 by Whole Foods" in rows[0], (
         f"expected 365 Whole Foods at top of $/g ranking, got: {rows[0]}"
     )
@@ -64,11 +72,7 @@ def test_greek_gods_loses_on_leucine_adjusted():
     """Greek Gods Honey Vanilla is high-sugar / low-protein — it should rank
     LAST on leucine_adjusted because $0.21/g × pretty low leucine fraction."""
     out = _run_rank(sort="leucine_adjusted")
-    rows = [
-        line
-        for line in out.splitlines()
-        if line.startswith("|") and "---" not in line and "Product" not in line
-    ]
+    rows = _main_table_rows(out)
     assert "Greek Gods" in rows[-1], (
         f"expected Greek Gods at bottom of leucine_adjusted, got: {rows[-1]}"
     )

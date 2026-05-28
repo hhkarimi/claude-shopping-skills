@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ranking import compute_row, format_table
+from ranking import compute_picks, compute_row, format_picks, format_table
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RANK_SCRIPT = REPO_ROOT / "skills" / "rank-protein-powders" / "scripts" / "rank.py"
@@ -412,6 +412,124 @@ def test_compute_row_includes_amazon_url():
     }
     row = compute_row("B0ABCDEFGH", 20.0, nut)
     assert row["url"] == "https://www.amazon.com/dp/B0ABCDEFGH"
+
+
+# ---------- compute_picks / format_picks ----------
+
+
+def _make_row(asin, name, price, dpg, cal, leu):
+    return {
+        "asin": asin,
+        "name": name,
+        "type": "whey_isolate",
+        "channel": "regular",
+        "price": price,
+        "total_protein_g": 1000,
+        "dollar_per_g_protein": dpg,
+        "cal_protein": cal,
+        "leucine_adjusted": leu,
+        "url": f"https://www.amazon.com/dp/{asin}",
+    }
+
+
+def test_compute_picks_returns_winner_per_criterion():
+    rows = [
+        _make_row("B0CHEAP001", "Cheap raw", 30.0, 0.020, 5.00, 0.030),
+        _make_row("B0LEAN0001", "Lean macros", 40.0, 0.040, 4.00, 0.045),
+        _make_row("B0LEUC0001", "Best leucine", 35.0, 0.030, 4.50, 0.025),
+    ]
+    picks = compute_picks(rows)
+    labels_to_asin = {label: row["asin"] for label, row in picks}
+    assert labels_to_asin["Lowest $/g protein"] == "B0CHEAP001"
+    assert labels_to_asin["Best muscle-building $/g (leucine-adj)"] == "B0LEUC0001"
+    assert labels_to_asin["Leanest macros (cal:protein)"] == "B0LEAN0001"
+
+
+def test_compute_picks_empty_when_fewer_than_two_rows():
+    """Picking the 'best' from a single row is silly — skip the table entirely."""
+    assert compute_picks([]) == []
+    assert (
+        compute_picks([_make_row("B0SOLO0001", "Solo", 30.0, 0.020, 5.0, 0.030)]) == []
+    )
+
+
+def test_compute_picks_allows_same_winner_across_criteria():
+    """One product dominating multiple criteria is a feature, not a bug —
+    each goal row still appears so the user sees it's the best on each axis."""
+    rows = [
+        _make_row("B0KING00001", "Dominant", 30.0, 0.020, 4.00, 0.020),
+        _make_row("B0LOSER0001", "Worse on all", 40.0, 0.050, 6.00, 0.060),
+    ]
+    picks = compute_picks(rows)
+    assert len(picks) == 3
+    assert all(row["asin"] == "B0KING00001" for _, row in picks)
+
+
+def test_format_picks_renders_header_and_rows():
+    rows = [
+        _make_row("B0CHEAP001", "Cheap raw", 30.0, 0.020, 5.00, 0.030),
+        _make_row("B0LEAN0001", "Lean macros", 40.0, 0.040, 4.00, 0.045),
+    ]
+    out = format_picks(rows)
+    assert "| Goal |" in out
+    assert "| Pick |" in out
+    assert "| Cal:protein |" in out
+    assert "| Leucine-adj $/g |" in out
+    assert "Lowest $/g protein" in out
+    assert "Leanest macros (cal:protein)" in out
+    assert "Cheap raw" in out
+    assert "Lean macros" in out
+    assert "[link](https://www.amazon.com/dp/B0CHEAP001)" in out
+
+
+def test_format_picks_returns_empty_string_when_no_picks():
+    assert format_picks([]) == ""
+
+
+def test_print_report_includes_picks_table_when_multiple_rows(capsys):
+    """The 'Best pick by goal' table is part of the skill's standard output —
+    must appear on stdout (not stderr) below the main ranking table."""
+    from ranking import print_report
+
+    rows = [
+        _make_row("B0CHEAP001", "Cheap raw", 30.0, 0.020, 5.00, 0.030),
+        _make_row("B0LEAN0001", "Lean macros", 40.0, 0.040, 4.00, 0.045),
+    ]
+    print_report(
+        {
+            "rows": rows,
+            "missing_price": [],
+            "missing_nut": [],
+            "invalid_nut": [],
+            "malformed": [],
+            "sort": "dollar_per_g_protein",
+        }
+    )
+    captured = capsys.readouterr()
+    assert "Best pick by goal:" in captured.out
+    assert "Lowest $/g protein" in captured.out
+    # Main ranking table must still come first.
+    main_idx = captured.out.index("| Product |")
+    picks_idx = captured.out.index("Best pick by goal:")
+    assert main_idx < picks_idx
+
+
+def test_print_report_omits_picks_table_when_only_one_row(capsys):
+    from ranking import print_report
+
+    rows = [_make_row("B0SOLO0001", "Solo", 30.0, 0.020, 5.0, 0.030)]
+    print_report(
+        {
+            "rows": rows,
+            "missing_price": [],
+            "missing_nut": [],
+            "invalid_nut": [],
+            "malformed": [],
+            "sort": "dollar_per_g_protein",
+        }
+    )
+    captured = capsys.readouterr()
+    assert "Best pick by goal:" not in captured.out
 
 
 # ---------- end-to-end CLI ----------
