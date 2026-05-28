@@ -22,6 +22,7 @@ import asyncio
 import json
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Playwright deps are imported inside main() so `--help` and arg validation
@@ -88,7 +89,11 @@ async def _detect_fresh(page) -> tuple[bool, float | None]:
 async def scrape_one(context, asin: str, out_dir: Path, with_fresh: bool) -> dict:
     url = f"https://www.amazon.com/dp/{asin}"
     page = await context.new_page()
-    result: dict = {"asin": asin, "url": url}
+    result: dict = {
+        "asin": asin,
+        "url": url,
+        "scraped_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
     try:
         await navigate_with_retry(page, url)
         try:

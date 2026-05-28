@@ -7,7 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from ranking import compute_picks, compute_row, format_picks, format_table
+from ranking import (
+    compute_picks,
+    compute_row,
+    format_freshness,
+    format_picks,
+    format_table,
+    rank,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RANK_SCRIPT = REPO_ROOT / "skills" / "rank-protein-powders" / "scripts" / "rank.py"
@@ -530,6 +537,68 @@ def test_print_report_omits_picks_table_when_only_one_row(capsys):
     )
     captured = capsys.readouterr()
     assert "Best pick by goal:" not in captured.out
+
+
+# ---------- price freshness ----------
+
+
+def test_format_freshness_empty_when_no_timestamps():
+    """Pre-feature results.json files and fixtures have no scraped_at —
+    render no freshness line at all rather than 'unknown'."""
+    assert format_freshness([]) == ""
+
+
+def test_format_freshness_single_timestamp_when_all_equal():
+    ts = "2026-05-27T18:34:21+00:00"
+    assert format_freshness([ts, ts, ts]) == f"Prices captured: {ts}"
+
+
+def test_format_freshness_range_when_spans_multiple_scrapes():
+    earlier = "2026-05-25T10:00:00+00:00"
+    later = "2026-05-27T18:34:21+00:00"
+    out = format_freshness([later, earlier, later])
+    assert out == f"Prices captured: {earlier} .. {later}"
+
+
+def test_rank_collects_scraped_at_timestamps():
+    """rank() must propagate scraped_at from price entries into the result
+    so print_report can show freshness."""
+    nutrition = {
+        "B0TEST00001": {
+            "name": "T",
+            "type": "whey_isolate",
+            "servings_per_container": 10,
+            "protein_per_serving_g": 25,
+            "calories_per_serving": 100,
+            "leucine_per_serving_g": 2.75,
+        }
+    }
+    prices = [
+        {
+            "asin": "B0TEST00001",
+            "price": 25.0,
+            "scraped_at": "2026-05-27T18:00:00+00:00",
+        }
+    ]
+    result = rank(prices, nutrition, sort="dollar_per_g_protein")
+    assert result["price_timestamps"] == ["2026-05-27T18:00:00+00:00"]
+
+
+def test_rank_omits_timestamp_when_scraped_at_absent():
+    """Backwards-compat: results.json without scraped_at must still rank."""
+    nutrition = {
+        "B0TEST00001": {
+            "name": "T",
+            "type": "whey_isolate",
+            "servings_per_container": 10,
+            "protein_per_serving_g": 25,
+            "calories_per_serving": 100,
+            "leucine_per_serving_g": 2.75,
+        }
+    }
+    prices = [{"asin": "B0TEST00001", "price": 25.0}]
+    result = rank(prices, nutrition, sort="dollar_per_g_protein")
+    assert result["price_timestamps"] == []
 
 
 # ---------- end-to-end CLI ----------
