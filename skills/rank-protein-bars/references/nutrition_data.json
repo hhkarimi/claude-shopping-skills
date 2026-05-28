@@ -130,5 +130,38 @@
     "protein_per_serving_g": 12,
     "calories_per_serving": 210,
     "leucine_per_serving_g": 1.0
+  },
+  "B0DJWJQDJJ": {
+    "name": "David High Protein Bars, Chocolate Chip Cookie Dough, 12 ct",
+    "type": "whey_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 28,
+    "calories_per_serving": 150,
+    "leucine_per_serving_g": 2.85
+  },
+  "B0CYDWGL9F": {
+    "name": "MUSASHI High Protein Bar, Peanut Butter Chocolate, 12 ct",
+    "type": "whey_milk_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 45,
+    "calories_per_serving": 350,
+    "leucine_per_serving_g": 4.5
+  },
+  "B0886X32TM": {
+    "name": "Amazon Grocery Protein Chewy Bars, PB Dark Chocolate, 5 ct (Amazon Fresh)",
+    "type": "whey_soy_blend",
+    "channel": "fresh",
+    "servings_per_container": 5,
+    "protein_per_serving_g": 10,
+    "calories_per_serving": 140,
+    "leucine_per_serving_g": 0.95
+  },
+  "B015OA6C0C": {
+    "name": "GoMacro MacroBar Organic Vegan, Sunflower Butter + Chocolate, 12 ct",
+    "type": "pea_almond_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 11,
+    "calories_per_serving": 290,
+    "leucine_per_serving_g": 0.88
   }
 }
