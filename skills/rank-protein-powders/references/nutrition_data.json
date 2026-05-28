@@ -136,5 +136,21 @@
     "protein_per_serving_g": 25,
     "calories_per_serving": 140,
     "leucine_per_serving_g": 2.75
+  },
+  "B0C2WJHQLT": {
+    "name": "DEAL SUPPLEMENT Pea Protein Isolate, unflavored, 5 lb",
+    "type": "pea",
+    "servings_per_container": 75,
+    "protein_per_serving_g": 24,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 1.92
+  },
+  "B0FL4VHXNS": {
+    "name": "Nutricost Pea Protein Isolate, unflavored, 4 lb",
+    "type": "pea",
+    "servings_per_container": 71,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.6
   }
 }
