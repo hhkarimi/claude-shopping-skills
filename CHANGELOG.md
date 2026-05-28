@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.6.0...v0.7.0) (2026-05-28)
+
+
+### Features
+
+* commit price history snapshots + chat-summary rule ([#27](https://github.com/hhkarimi/claude-shopping-skills/issues/27)) ([17af89f](https://github.com/hhkarimi/claude-shopping-skills/commit/17af89f5c05091d349323f1d827640059968df9b))
+* discovery + history pass for powders and bars (2026-05-28) ([#28](https://github.com/hhkarimi/claude-shopping-skills/issues/28)) ([33a063c](https://github.com/hhkarimi/claude-shopping-skills/commit/33a063c0e5cfa60c9b6dcba4292059b1dc42c516))
+* **powders:** discovery run adds Transparent Labs + Nutricost Concentrate ([#24](https://github.com/hhkarimi/claude-shopping-skills/issues/24)) ([daab658](https://github.com/hhkarimi/claude-shopping-skills/commit/daab65813a48507d765922cf8e2d8d4eef84cb87))
+
 ## [0.6.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.5.0...v0.6.0) (2026-05-28)
 
 
