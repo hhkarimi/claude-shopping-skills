@@ -6,7 +6,8 @@
     "price_raw": "$181.99",
     "price": 181.99,
     "html_bytes": 0,
-    "ok": true
+    "ok": true,
+    "scraped_at": "2026-05-27T22:00:00+00:00"
   },
   {
     "asin": "B00NBIUGA2",
@@ -15,7 +16,8 @@
     "price_raw": "$57.99",
     "price": 57.99,
     "html_bytes": 0,
-    "ok": true
+    "ok": true,
+    "scraped_at": "2026-05-27T22:00:00+00:00"
   },
   {
     "asin": "B01COARRFE",
@@ -24,6 +26,7 @@
     "price_raw": "$23.19",
     "price": 23.19,
     "html_bytes": 0,
-    "ok": true
+    "ok": true,
+    "scraped_at": "2026-05-27T22:00:00+00:00"
   }
 ]

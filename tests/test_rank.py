@@ -3,7 +3,6 @@
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -544,9 +543,8 @@ def test_print_report_omits_picks_table_when_only_one_row(capsys):
 
 
 def test_format_freshness_empty_when_no_timestamps():
-    """Zero products ranked (no rows, no timestamps) — render no freshness
-    line rather than 'unknown'. rank() backfills missing scraped_at with
-    now(), so a populated ranking always produces at least one timestamp."""
+    """Zero timestamps (zero products ranked, or external results.json
+    predating scraped_at) — render no freshness line rather than 'unknown'."""
     assert format_freshness([]) == ""
 
 
@@ -586,11 +584,11 @@ def test_rank_collects_scraped_at_timestamps():
     assert result["price_timestamps"] == ["2026-05-27T18:00:00+00:00"]
 
 
-def test_rank_backfills_missing_scraped_at_with_now():
-    """When a price entry lacks scraped_at (legacy results.json, fixtures),
-    rank() substitutes the current UTC datetime so the freshness line still
-    renders. Approximation is OK: ranking happens at consumption time, so
-    'now' is the best honest signal we have for legacy data."""
+def test_rank_omits_timestamp_when_scraped_at_absent():
+    """External results.json (e.g. pre-feature, or hand-rolled) without
+    scraped_at must still rank — those entries simply don't contribute a
+    timestamp, and the freshness line is suppressed if every entry lacked
+    one. scrape.py and the committed fixtures always set scraped_at."""
     nutrition = {
         "B0TEST00001": {
             "name": "T",
@@ -602,37 +600,21 @@ def test_rank_backfills_missing_scraped_at_with_now():
         }
     }
     prices = [{"asin": "B0TEST00001", "price": 25.0}]
-    before = datetime.now(timezone.utc).isoformat(timespec="seconds")
     result = rank(prices, nutrition, sort="dollar_per_g_protein")
-    after = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    assert len(result["price_timestamps"]) == 1
-    backfilled = result["price_timestamps"][0]
-    assert before <= backfilled <= after, (
-        f"backfilled timestamp {backfilled} not in [{before}, {after}]"
-    )
+    assert result["price_timestamps"] == []
 
 
-def test_rank_preserves_existing_scraped_at_over_backfill():
-    """If scraped_at IS present, rank() must use that, not overwrite with now()."""
-    nutrition = {
-        "B0TEST00001": {
-            "name": "T",
-            "type": "whey_isolate",
-            "servings_per_container": 10,
-            "protein_per_serving_g": 25,
-            "calories_per_serving": 100,
-            "leucine_per_serving_g": 2.75,
-        }
-    }
-    prices = [
-        {
-            "asin": "B0TEST00001",
-            "price": 25.0,
-            "scraped_at": "2024-01-01T00:00:00+00:00",
-        }
-    ]
-    result = rank(prices, nutrition, sort="dollar_per_g_protein")
-    assert result["price_timestamps"] == ["2024-01-01T00:00:00+00:00"]
+def test_committed_fixtures_carry_scraped_at():
+    """All checked-in fixture files must include scraped_at on every entry
+    so the freshness line renders during local dev and CI. Real scrapes
+    always stamp; fixtures are stamped at commit time."""
+    for fixture in Path(__file__).parent.joinpath("fixtures").glob("*.json"):
+        with fixture.open() as f:
+            data = json.load(f)
+        for entry in data:
+            assert "scraped_at" in entry, (
+                f"{fixture.name} entry {entry.get('asin')} missing scraped_at"
+            )
 
 
 # ---------- end-to-end CLI ----------
