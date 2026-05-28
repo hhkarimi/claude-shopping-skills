@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.5.0...v0.6.0) (2026-05-28)
+
+
+### Features
+
+* add 'Best pick by goal' summary table to standard rank output ([#20](https://github.com/hhkarimi/claude-shopping-skills/issues/20)) ([19c1e62](https://github.com/hhkarimi/claude-shopping-skills/commit/19c1e62eeacffcf40d4fbf8116539065c64024b4))
+* discovery run adds 3 powders + 4 bars ([#22](https://github.com/hhkarimi/claude-shopping-skills/issues/22)) ([b005dcf](https://github.com/hhkarimi/claude-shopping-skills/commit/b005dcf8a9e5cb635b5be6b697915a22bdf5e1ab))
+* **powders:** add 2 high-value pea isolates (DEAL SUPPLEMENT, Nutricost) ([#19](https://github.com/hhkarimi/claude-shopping-skills/issues/19)) ([fe760e6](https://github.com/hhkarimi/claude-shopping-skills/commit/fe760e6a81971f09b589569c84900d38960cd1f2))
+* track price freshness via scraped_at + 'Prices captured' line ([#23](https://github.com/hhkarimi/claude-shopping-skills/issues/23)) ([59e1720](https://github.com/hhkarimi/claude-shopping-skills/commit/59e1720ffd603c2902eac7898e8abf248b596e8d))
+
 ## [0.5.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.4.0...v0.5.0) (2026-05-28)
 
 
