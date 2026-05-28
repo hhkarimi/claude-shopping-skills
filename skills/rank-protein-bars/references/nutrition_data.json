@@ -112,5 +112,23 @@
     "protein_per_serving_g": 20,
     "calories_per_serving": 190,
     "leucine_per_serving_g": 2.0
+  },
+  "B00I669GHS": {
+    "name": "CLIF Builders Chocolate Peanut Butter, 6 ct (Amazon Fresh)",
+    "type": "soy_rice_blend",
+    "channel": "fresh",
+    "servings_per_container": 6,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 280,
+    "leucine_per_serving_g": 1.6
+  },
+  "B0CND6BGC6": {
+    "name": "RXBAR Protein Bars Variety Pack, 10 ct (Amazon Fresh)",
+    "type": "egg_whole_food",
+    "channel": "fresh",
+    "servings_per_container": 10,
+    "protein_per_serving_g": 12,
+    "calories_per_serving": 210,
+    "leucine_per_serving_g": 1.0
   }
 }

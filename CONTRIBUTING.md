@@ -72,6 +72,38 @@ The 503-retry and ZIP-setting helpers are shared between both scripts in `skills
 
 The pattern: each rank-* skill is just a `SKILL.md`, a `nutrition_data.json`, and a thin `rank.py` wrapper. The actual ranking math lives in `.claude-plugin/lib/ranking.py` and is shared across all domains. To add a new domain, copy the structure of an existing rank-* skill (e.g. `rank-greek-yogurt` is the most recent template) and replace its data.
 
+## Discovery workflow
+
+When you run a `rank-*` skill in search mode, the ranker only considers ASINs that are in the nutrition database. ASINs found by search but not in the DB get listed at the end as `Found in search but no nutrition data`. **That list is the discovery feed** — when you're trying to surface the actual best deals (not just rank what we already know), you should triage that list as part of the run.
+
+The recommended flow:
+
+1. **Run with `--search` + `--zip` + `--include-fresh`** to surface both regular Amazon and Fresh storefront candidates:
+   ```bash
+   uv run skills/rank-protein-bars/scripts/rank.py \
+     --search "protein bars" --zip 78752 \
+     --nutrition skills/rank-protein-bars/references/nutrition_data.json
+   ```
+
+2. **Read the "Found in search but no nutrition data" list** under the table on stderr. Each entry is a brand+title preview.
+
+3. **Pick the candidates worth adding**. Useful filters:
+   - Brand already in our DB on the OTHER channel — likely cross-channel pair (e.g. Fresh-exclusive 10-ct of a regular 12-ct we have)
+   - Notable/popular brand not yet in the DB — fills a real gap
+   - Amazon's own house brand (`Amazon Grocery`) — Fresh-exclusive store-brand items often beat name brands on $/g
+
+4. **Scrape each candidate** to confirm the pack count, price, and Fresh availability:
+   ```bash
+   uv run skills/amazon-product-data/scripts/scrape.py <ASIN> --zip 78752
+   ```
+   The scraped result includes `fresh_available` and (when present) `fresh_price` — these tell you which `channel` tag to use.
+
+5. **Add to `nutrition_data.json`** with the right channel. For products that exist on both Amazon and Amazon Fresh under different ASINs, add BOTH entries — see [Cross-channel pairs](#cross-channel-pairs).
+
+6. **Re-run the pipeline** and check the ranking with the new entries included.
+
+Result: each cycle expands the database with the actual high-value items the live search surfaced, so subsequent runs rank a more complete set.
+
 ## Local dev
 
 Requirements: `uv` (`brew install uv`). Everything else is managed by uv.
