@@ -332,6 +332,42 @@ def test_compute_row_respects_nutrition_channel_default_when_unknown():
     assert row["channel"] == "fresh"
 
 
+def test_compute_row_nutrition_channel_fresh_wins_over_scraped_false():
+    """An explicit `channel: "fresh"` in nutrition_data.json wins over a
+    scrape `fresh_available=False`. This handles ASINs that surface in the
+    Fresh storefront search but whose regular product page doesn't render
+    the Fresh badge — common for items cross-listed on both channels."""
+    nut = {
+        "name": "RXBAR-like cross-channel Fresh-storefront listing",
+        "type": "egg_whole_food",
+        "channel": "fresh",
+        "servings_per_container": 10,
+        "protein_per_serving_g": 12,
+        "calories_per_serving": 210,
+        "leucine_per_serving_g": 1.0,
+    }
+    row = compute_row("B0CND6BGC6", 16.98, nut, fresh_available=False, fresh_price=None)
+    assert row["channel"] == "fresh"
+
+
+def test_compute_row_scrape_fresh_true_wins_over_nutrition_regular():
+    """The opposite precedence: if scrape definitively sees the Fresh badge,
+    that wins even when nutrition tagged the entry as 'regular'. (Captures
+    the case where Amazon expanded Fresh stocking after our DB was last
+    updated.)"""
+    nut = {
+        "name": "Test",
+        "type": "milk_protein",
+        "channel": "regular",
+        "servings_per_container": 4,
+        "protein_per_serving_g": 17,
+        "calories_per_serving": 100,
+        "leucine_per_serving_g": 1.5,
+    }
+    row = compute_row("B0NEWFRSH1", 5.99, nut, fresh_available=True)
+    assert row["channel"] == "fresh"
+
+
 def test_compute_row_uses_fresh_price_for_dollar_per_g_when_set():
     """When fresh_available is true AND a separate fresh_price exists, that
     Fresh price drives the $/g math because it's what the user would pay."""

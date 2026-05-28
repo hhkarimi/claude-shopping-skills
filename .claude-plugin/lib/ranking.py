@@ -80,12 +80,22 @@ def compute_row(
     leucine_fraction = leucine / protein_per_serving
     leucine_adjusted = dollar_per_g * (WHEY_ISOLATE_LEUCINE_FRACTION / leucine_fraction)
 
+    # Channel precedence:
+    # 1. Scrape detected the Fresh badge → "fresh" (definitive signal).
+    # 2. Nutrition entry explicitly tagged the channel → trust the user's
+    #    choice (handles Fresh-storefront-only listings whose regular
+    #    product page doesn't render the Fresh badge — common for items
+    #    Amazon indexes on Fresh but cross-lists on regular).
+    # 3. Scrape definitively detected no Fresh → "regular".
+    # 4. No signal at all → default to "regular".
     if fresh_available is True:
         channel = "fresh"
+    elif nut.get("channel"):
+        channel = nut["channel"]
     elif fresh_available is False:
         channel = "regular"
     else:
-        channel = nut.get("channel") or "regular"
+        channel = "regular"
 
     return {
         "asin": asin,
