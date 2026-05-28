@@ -176,5 +176,21 @@
     "protein_per_serving_g": 25,
     "calories_per_serving": 120,
     "leucine_per_serving_g": 2.5
+  },
+  "B0CQ3JTR6F": {
+    "name": "Transparent Labs Grass-Fed Whey Isolate, Vanilla, 2 lb",
+    "type": "whey_isolate",
+    "servings_per_container": 30,
+    "protein_per_serving_g": 28,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 3.08
+  },
+  "B01KITQEPM": {
+    "name": "Nutricost Whey Concentrate, Vanilla, 5 lb",
+    "type": "whey_concentrate",
+    "servings_per_container": 60,
+    "protein_per_serving_g": 25,
+    "calories_per_serving": 120,
+    "leucine_per_serving_g": 2.5
   }
 }
