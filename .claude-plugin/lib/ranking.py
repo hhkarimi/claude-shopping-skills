@@ -196,6 +196,7 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
     missing_price: list[str] = []
     invalid_nut: list[str] = []
     malformed: list[str] = []
+    price_timestamps: list[str] = []
     for entry in prices:
         asin = entry.get("asin")
         if not asin:
@@ -219,6 +220,9 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
                     fresh_price=entry.get("fresh_price"),
                 )
             )
+            scraped_at = entry.get("scraped_at")
+            if scraped_at:
+                price_timestamps.append(scraped_at)
         except ValueError as e:
             invalid_nut.append(f"{asin} ({e})")
 
@@ -230,7 +234,23 @@ def rank(prices: list[dict], nutrition: dict, sort: str) -> dict:
         "invalid_nut": invalid_nut,
         "malformed": malformed,
         "sort": sort,
+        "price_timestamps": price_timestamps,
     }
+
+
+def format_freshness(timestamps: list[str]) -> str:
+    """Return a 'Prices captured: ...' line summarizing when the underlying
+    scrape ran. Empty string when no timestamps — either zero products
+    ranked, or every price entry lacked `scraped_at` (legacy/external
+    results.json predating that field). scrape.py always stamps now; the
+    committed fixtures are stamped at 2026-05-27T22:00:00+00:00."""
+    if not timestamps:
+        return ""
+    earliest = min(timestamps)
+    latest = max(timestamps)
+    if earliest == latest:
+        return f"Prices captured: {earliest}"
+    return f"Prices captured: {earliest} .. {latest}"
 
 
 def print_report(result: dict, unknown_search_hits: list[dict] | None = None) -> None:
@@ -247,6 +267,9 @@ def print_report(result: dict, unknown_search_hits: list[dict] | None = None) ->
             print()
             print(picks_table)
             print()
+    freshness = format_freshness(result.get("price_timestamps", []))
+    if freshness:
+        print(freshness)
     print(f"Sorted by: {result['sort']}")
     print(f"Ranked: {len(rows)} products")
 

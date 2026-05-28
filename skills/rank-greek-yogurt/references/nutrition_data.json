@@ -88,5 +88,37 @@
     "protein_per_serving_g": 6,
     "calories_per_serving": 200,
     "leucine_per_serving_g": 0.5
+  },
+  "B00B03XDPA": {
+    "name": "Stonyfield Organic Greek Nonfat Plain Yogurt, 32 oz",
+    "type": "plain_nonfat",
+    "servings_per_container": 5,
+    "protein_per_serving_g": 16,
+    "calories_per_serving": 90,
+    "leucine_per_serving_g": 1.52
+  },
+  "B0FGQG1LQV": {
+    "name": "Chobani 20g Protein Lowfat Greek Plain Yogurt, 32 oz",
+    "type": "plain_lowfat",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 130,
+    "leucine_per_serving_g": 1.9
+  },
+  "B07MYD18HM": {
+    "name": "365 by Whole Foods Organic Greek Nonfat Plain, 32 oz",
+    "type": "plain_nonfat",
+    "servings_per_container": 4,
+    "protein_per_serving_g": 17,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.62
+  },
+  "B0F5J265YK": {
+    "name": "FAGE Total 0% Nonfat Plain Greek Yogurt, 16 oz",
+    "type": "plain_nonfat",
+    "servings_per_container": 2.5,
+    "protein_per_serving_g": 18,
+    "calories_per_serving": 100,
+    "leucine_per_serving_g": 1.71
   }
 }

@@ -34,6 +34,8 @@ Two-layer plugin with one shared lib per concern:
 
 **Channel column**: derived from each price entry's `fresh_available` field (set by scrape.py when `--zip` is passed). Falls back to the nutrition entry's `channel` field, then `"regular"`. When `fresh_available=True` AND a separate `fresh_price` was captured, that price drives the $/g math.
 
+**Price freshness**: scrape.py stamps each result with `scraped_at` (ISO-8601 in Eastern Time via `zoneinfo.ZoneInfo("America/New_York")` — EDT in summer, EST in winter, DST switch is automatic). rank.py surfaces this as a "Prices captured: …" line below the picks table. Amazon prices move — sale items can shift hourly, stable SKUs weekly. Re-scrape within 24h of any purchase decision. The `scraped_at` field is on the scrape output (results.json), **not** in `nutrition_data.json` — nutrition facts are static, so don't conflate the two. Committed test fixtures carry an explicit `scraped_at` baked in (currently `2026-05-27T22:00:00-04:00`) so the freshness line renders deterministically in CI. External `results.json` that predates the field will simply not render the line — accurate ("we don't know when these were captured") rather than misleading.
+
 **Adding a new rank-* domain**: copy an existing skill folder (e.g. `skills/rank-greek-yogurt` as the most recent template), replace the nutrition data, edit `SKILL.md` for the new domain.
 
 **Adding a product to an existing skill**: edit that skill's `references/nutrition_data.json`. Schema is shared across rank-* — see [CONTRIBUTING.md](CONTRIBUTING.md#add-a-product-to-a-rank--skill).

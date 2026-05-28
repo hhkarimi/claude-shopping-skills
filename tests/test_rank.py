@@ -7,7 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from ranking import compute_picks, compute_row, format_picks, format_table
+from ranking import (
+    compute_picks,
+    compute_row,
+    format_freshness,
+    format_picks,
+    format_table,
+    rank,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RANK_SCRIPT = REPO_ROOT / "skills" / "rank-protein-powders" / "scripts" / "rank.py"
@@ -530,6 +537,84 @@ def test_print_report_omits_picks_table_when_only_one_row(capsys):
     )
     captured = capsys.readouterr()
     assert "Best pick by goal:" not in captured.out
+
+
+# ---------- price freshness ----------
+
+
+def test_format_freshness_empty_when_no_timestamps():
+    """Zero timestamps (zero products ranked, or external results.json
+    predating scraped_at) — render no freshness line rather than 'unknown'."""
+    assert format_freshness([]) == ""
+
+
+def test_format_freshness_single_timestamp_when_all_equal():
+    ts = "2026-05-27T18:34:21-04:00"
+    assert format_freshness([ts, ts, ts]) == f"Prices captured: {ts}"
+
+
+def test_format_freshness_range_when_spans_multiple_scrapes():
+    earlier = "2026-05-25T10:00:00-04:00"
+    later = "2026-05-27T18:34:21-04:00"
+    out = format_freshness([later, earlier, later])
+    assert out == f"Prices captured: {earlier} .. {later}"
+
+
+def test_rank_collects_scraped_at_timestamps():
+    """rank() must propagate scraped_at from price entries into the result
+    so print_report can show freshness."""
+    nutrition = {
+        "B0TEST00001": {
+            "name": "T",
+            "type": "whey_isolate",
+            "servings_per_container": 10,
+            "protein_per_serving_g": 25,
+            "calories_per_serving": 100,
+            "leucine_per_serving_g": 2.75,
+        }
+    }
+    prices = [
+        {
+            "asin": "B0TEST00001",
+            "price": 25.0,
+            "scraped_at": "2026-05-27T18:00:00-04:00",
+        }
+    ]
+    result = rank(prices, nutrition, sort="dollar_per_g_protein")
+    assert result["price_timestamps"] == ["2026-05-27T18:00:00-04:00"]
+
+
+def test_rank_omits_timestamp_when_scraped_at_absent():
+    """External results.json (e.g. pre-feature, or hand-rolled) without
+    scraped_at must still rank — those entries simply don't contribute a
+    timestamp, and the freshness line is suppressed if every entry lacked
+    one. scrape.py and the committed fixtures always set scraped_at."""
+    nutrition = {
+        "B0TEST00001": {
+            "name": "T",
+            "type": "whey_isolate",
+            "servings_per_container": 10,
+            "protein_per_serving_g": 25,
+            "calories_per_serving": 100,
+            "leucine_per_serving_g": 2.75,
+        }
+    }
+    prices = [{"asin": "B0TEST00001", "price": 25.0}]
+    result = rank(prices, nutrition, sort="dollar_per_g_protein")
+    assert result["price_timestamps"] == []
+
+
+def test_committed_fixtures_carry_scraped_at():
+    """All checked-in fixture files must include scraped_at on every entry
+    so the freshness line renders during local dev and CI. Real scrapes
+    always stamp; fixtures are stamped at commit time."""
+    for fixture in Path(__file__).parent.joinpath("fixtures").glob("*.json"):
+        with fixture.open() as f:
+            data = json.load(f)
+        for entry in data:
+            assert "scraped_at" in entry, (
+                f"{fixture.name} entry {entry.get('asin')} missing scraped_at"
+            )
 
 
 # ---------- end-to-end CLI ----------
