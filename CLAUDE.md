@@ -27,7 +27,7 @@ Two-layer plugin with one shared lib per concern:
 
 1. **`amazon-product-data` skill** — generic Amazon search (`search.py`) + scrape (`scrape.py`) using stealth Playwright. Bypasses AWS WAF. The two scripts share `_lib.py` (co-located) for the 503-retry helper and the delivery-ZIP setter — edit there for retry/throttle changes, not in the individual scripts.
 
-2. **`rank-*` skills** — each is a thin wrapper around `.claude-plugin/lib/ranking.py`. The shared module owns the math, the schema, the CLI, the table renderer (incl. Channel column + `% Δ vs prev` between adjacent ranks), and the "Best pick by goal" summary table that follows the main ranking. Each skill provides only:
+2. **`rank-*` skills** — each is a thin wrapper around `.claude-plugin/lib/ranking.py`. The shared module owns the math, the schema, the CLI, the table renderer (incl. Channel column, `% Δ vs prev` between adjacent ranks, and a `Buy` column rendering `[link](https://www.amazon.com/dp/<ASIN>)` for every product), and the "Best pick by goal" summary table that follows the main ranking. Each skill provides only:
    - `references/nutrition_data.json` — curated per-domain data
    - `scripts/rank.py` — ~15-line wrapper that calls `run_cli(description=...)`
    - `SKILL.md` — domain-specific `type` values + leucine fractions
