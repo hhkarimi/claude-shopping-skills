@@ -180,5 +180,13 @@
     "protein_per_serving_g": 14,
     "calories_per_serving": 220,
     "leucine_per_serving_g": 1.12
+  },
+  "B000EXQ4AS": {
+    "name": "NuGo Smarte Carb 20g, Peanut Butter Crunch, 12 ct",
+    "type": "whey_blend",
+    "servings_per_container": 12,
+    "protein_per_serving_g": 20,
+    "calories_per_serving": 160,
+    "leucine_per_serving_g": 2.0
   }
 }
