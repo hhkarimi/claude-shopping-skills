@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.3.0...v0.4.0) (2026-05-28)
+
+
+### Features
+
+* cross-channel pairs in bars DB + discovery workflow doc ([#15](https://github.com/hhkarimi/claude-shopping-skills/issues/15)) ([9f17c81](https://github.com/hhkarimi/claude-shopping-skills/commit/9f17c81935b1643cd1068bc127cea8fbdc46fade))
+
 ## [0.3.0](https://github.com/hhkarimi/claude-shopping-skills/compare/v0.2.0...v0.3.0) (2026-05-27)
 
 
